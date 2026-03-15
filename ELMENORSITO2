@@ -153,7 +153,7 @@ local function playSound(soundId, volume, speed)
     if ok and sound then
         sound:Play()
         task.delay(1, function()
-            if sound then
+            if sound and sound.Parent then
                 sound:Destroy()
             end
         end)
@@ -225,6 +225,7 @@ local function cloneCharacter(viewport)
                 v.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
             elseif v:IsA("BasePart") then
                 v.Anchored = true
+                v.CanCollide = false
             end
         end
     end
@@ -266,6 +267,7 @@ function Library:CreateWindow(title)
     self.PreviewRotationSpeed = 16
     self._AmbientEnabled = false
     self._AmbientColor = Theme.Accent
+    self.CharacterAddedConn = nil
 
     self.FOVVisual = {
         Enabled = true,
@@ -280,15 +282,17 @@ function Library:CreateWindow(title)
         Parent = LocalPlayer:WaitForChild("PlayerGui"),
         ResetOnSpawn = false,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-        IgnoreGui
         IgnoreGuiInset = true,
     })
     self.GUI = gui
 
-    local blur = Lighting:FindFirstChild("ValarySafeBlur") or Instance.new("BlurEffect")
-    blur.Name = "ValarySafeBlur"
-    blur.Size = 0
-    blur.Parent = Lighting
+    local blur = Lighting:FindFirstChild("ValarySafeBlur")
+    if not blur then
+        blur = Instance.new("BlurEffect")
+        blur.Name = "ValarySafeBlur"
+        blur.Size = 0
+        blur.Parent = Lighting
+    end
     Tween(blur, 0.18, {Size = 4})
     self.Blur = blur
 
@@ -588,7 +592,9 @@ function Library:CreateWindow(title)
 
         for _, picker in ipairs(self.ColorPickers) do
             if picker.Preview and picker.Preview.Parent then
-                picker.Preview.BackgroundColor3 = color
+                if not picker.ApplyToAccent then
+                    picker.Preview.BackgroundColor3 = picker.Preview.BackgroundColor3
+                end
             end
         end
 
@@ -766,6 +772,10 @@ function Library:CreateWindow(title)
         if self.PreviewPanel and self.PreviewPanel.Visible then
             self.PreviewPanel:Destroy()
             self.PreviewPanel = nil
+            if self.PreviewConn then
+                self.PreviewConn:Disconnect()
+                self.PreviewConn = nil
+            end
             self:CreatePreviewPanel()
         end
     end
@@ -782,6 +792,11 @@ function Library:CreateWindow(title)
         if self.PreviewConn then
             self.PreviewConn:Disconnect()
             self.PreviewConn = nil
+        end
+
+        if self.CharacterAddedConn then
+            self.CharacterAddedConn:Disconnect()
+            self.CharacterAddedConn = nil
         end
 
         gui:Destroy()
@@ -1163,6 +1178,9 @@ function Library:CreateWindow(title)
                         Set = function(_, v)
                             state = v and true or false
                             render()
+                            if callback then
+                                callback(state)
+                            end
                         end,
                     }
                 end
@@ -1710,7 +1728,13 @@ function Library:CreateWindow(title)
         Stroke(viewport, Theme.Border, 1)
 
         local clone = cloneCharacter(viewport)
-        local conn = RunService.RenderStepped:Connect(function(dt)
+
+        if self.PreviewConn then
+            self.PreviewConn:Disconnect()
+            self.PreviewConn = nil
+        end
+
+        self.PreviewConn = RunService.RenderStepped:Connect(function(dt)
             if clone and clone.Parent and clone.PrimaryPart then
                 pcall(function()
                     clone:PivotTo(clone:GetPivot() * CFrame.Angles(0, math.rad(self.PreviewRotationSpeed * dt), 0))
@@ -1718,13 +1742,17 @@ function Library:CreateWindow(title)
             end
         end)
 
-        LocalPlayer.CharacterAdded:Connect(function()
+        if self.CharacterAddedConn then
+            self.CharacterAddedConn:Disconnect()
+            self.CharacterAddedConn = nil
+        end
+
+        self.CharacterAddedConn = LocalPlayer.CharacterAdded:Connect(function()
             task.wait(0.7)
             clone = cloneCharacter(viewport)
         end)
 
         self.PreviewPanel = preview
-        self.PreviewConn = conn
     end
 
     function self:BuildDemo()
