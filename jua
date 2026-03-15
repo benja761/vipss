@@ -1,4 +1,3 @@
-
 -- Valary-style safe UI library for Roblox Studio
 -- Visual framework only. No exploit or cheat logic.
 
@@ -34,6 +33,7 @@ local Theme = {
 
 local Icons = {
     Main = "⌂",
+    Combat = "✦",
     Visuals = "◉",
 }
 
@@ -416,7 +416,7 @@ function Library:CreateWindow(title)
         Parent = main,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 12, 0, 96),
-        Size = UDim2.new(1, -24, 1, -160),
+        Size = UDim2.new(1, -24, 1, -170),
         ClipsDescendants = true,
         ZIndex = 2,
     })
@@ -425,8 +425,8 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 220, 0, 42),
-        Position = UDim2.new(0.5, -110, 1, 28),
+        Size = UDim2.new(0, 340, 0, 42),
+        Position = UDim2.new(0.5, -170, 1, 40),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -451,14 +451,14 @@ function Library:CreateWindow(title)
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         VerticalAlignment = Enum.VerticalAlignment.Center,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, 8),
     })
 
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 270, 0, 40),
-        Position = UDim2.new(0.5, -135, 1, -4),
+        Size = UDim2.new(0, 300, 0, 40),
+        Position = UDim2.new(0.5, -150, 1, 6),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
@@ -512,8 +512,8 @@ function Library:CreateWindow(title)
     end
 
     function self:RepositionBottomBars()
-        self.MainTabsHolder.Position = UDim2.new(0.5, -110, 1, 28)
-        self.SubTabHolder.Position = UDim2.new(0.5, -135, 1, -4)
+        self.MainTabsHolder.Position = UDim2.new(0.5, -170, 1, 40)
+        self.SubTabHolder.Position = UDim2.new(0.5, -150, 1, 6)
     end
     self:RepositionBottomBars()
 
@@ -691,7 +691,7 @@ function Library:CreateWindow(title)
             Parent = mainTabsScroll,
             BackgroundColor3 = Theme.Panel,
             AutoButtonColor = false,
-            Size = UDim2.new(0, 56, 1, 0),
+            Size = UDim2.new(0, 64, 1, 0),
             Font = Enum.Font.GothamBold,
             Text = Icons[name] or string.sub(name, 1, 1),
             TextColor3 = Theme.SubText,
@@ -765,7 +765,7 @@ function Library:CreateWindow(title)
                 Parent = subTabsScroll,
                 BackgroundColor3 = Theme.Panel,
                 AutoButtonColor = false,
-                Size = UDim2.new(0, math.max(76, #subName * 8), 1, 0),
+                Size = UDim2.new(0, math.max(82, #subName * 8), 1, 0),
                 Text = subName,
                 Font = Enum.Font.GothamBold,
                 TextSize = 12,
@@ -1561,6 +1561,7 @@ function Library:CreateWindow(title)
         self:Notify("UI loaded successfully")
 
         local mainTab = self:AddTab("Main")
+        local combatTab = self:AddTab("Combat")
         local visualsTab = self:AddTab("Visuals")
 
         local dashboard = mainTab:AddSubTab("Dashboard")
@@ -1575,6 +1576,38 @@ function Library:CreateWindow(title)
             right:AddToggle("Show Intro Effects", true)
             right:AddSlider("UI Animation Speed", 0.05, 1, 0.18)
             right:AddToggle("Menu Glow", true)
+            right:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
+                self.HideKey = key
+            end)
+        end
+
+        local aim = combatTab:AddSubTab("Aim")
+        do
+            local left = aim:AddSection("Combat Aim", "left")
+            left:AddToggle("Enable Aim UI", false)
+            left:AddSlider("Aim Radius", 10, 200, 60)
+            left:AddSlider("Smoothness", 0, 20, 5)
+            left:AddDropdown("Aim Mode", {"Soft", "Balanced", "Sharp"}, "Balanced")
+            left:AddKeybind("Aim Key", Enum.KeyCode.Q)
+
+            local right = aim:AddSection("Aim Visual", "right")
+            right:AddColorPicker("Aim Accent", Theme.Accent, function(c)
+                self:SetAccent(c)
+            end, false)
+            right:AddToggle("Show Aim Panel", true)
+            right:AddSlider("Opacity", 0, 1, 0.8)
+        end
+
+        local leftTab = combatTab:AddSubTab("Left")
+        do
+            local left = leftTab:AddSection("Left Settings", "left")
+            left:AddToggle("Enable Left Module", false)
+            left:AddSlider("Power", 0, 100, 25)
+            left:AddDropdown("Preset", {"Low", "Medium", "High"}, "Medium")
+
+            local right = leftTab:AddSection("Extra", "right")
+            right:AddToggle("Notifications", true)
+            right:AddSlider("Delay", 0, 5, 1)
         end
 
         local world = visualsTab:AddSubTab("World")
@@ -1666,13 +1699,16 @@ function Library:CreateWindow(title)
             end)
             left:AddColorPicker("Preview Accent", Theme.Accent)
 
-            local right = players:AddSection("Labels", "right")
-            right:AddToggle("Name", true)
-            right:AddSlider("Name Size", 8, 24, 13)
+            local right = players:AddSection("ESP Layout Mockup", "right")
+            right:AddLabel("Only switches and layout preview. No ESP logic.")
+            right:AddToggle("ESP", false)
+            right:AddToggle("Box", false)
+            right:AddToggle("Corner", false)
+            right:AddToggle("Health", false)
+            right:AddToggle("Tracer", false)
+            right:AddToggle("Name", false)
             right:AddToggle("Distance", false)
-            right:AddSlider("Distance Size", 8, 24, 11)
-            right:AddToggle("Health Text", false)
-            right:AddSlider("Health Text Size", 8, 24, 11)
+            right:AddToggle("Weapon", false)
         end
 
         local uiVisual = visualsTab:AddSubTab("UI")
