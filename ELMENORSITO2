@@ -223,6 +223,7 @@ local function cloneCharacter(viewport)
                 v:Destroy()
             elseif v:IsA("Humanoid") then
                 v.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+                v.AutoRotate = false
             elseif v:IsA("BasePart") then
                 v.Anchored = true
                 v.CanCollide = false
@@ -236,11 +237,11 @@ local function cloneCharacter(viewport)
     if primary then
         clone.PrimaryPart = primary
         pcall(function()
-            clone:PivotTo(CFrame.new())
+            clone:PivotTo(CFrame.new(0, -1.4, 0))
         end)
     end
 
-    cam.CFrame = CFrame.new(Vector3.new(0, 1.5, 6.6), Vector3.new(0, 1.5, 0))
+    cam.CFrame = CFrame.new(Vector3.new(0, 1.2, 6.8), Vector3.new(0, 1.2, 0))
 
     local light = Instance.new("PointLight")
     light.Range = 24
@@ -267,15 +268,27 @@ function Library:CreateWindow(title)
     self.PreviewRotationSpeed = 16
     self._AmbientEnabled = false
     self._AmbientColor = Theme.Accent
-    self.CharacterAddedConn = nil
-
-    self.FOVVisual = {
-        Enabled = true,
-        Radius = 120,
-        Thickness = 2,
-        Transparency = 0,
-        Color = Theme.Accent,
+    self._MenuSounds = true
+    self._SmoothOpen = true
+    self._UIScaleValue = 1
+    self._BottomTabsVisible = true
+    self._BlurEnabled = true
+    self._OriginalLighting = {
+        Brightness = Lighting.Brightness,
+        ClockTime = Lighting.ClockTime,
+        Ambient = Lighting.Ambient,
+        OutdoorAmbient = Lighting.OutdoorAmbient,
+        GlobalShadows = Lighting.GlobalShadows,
+        FogEnd = Lighting.FogEnd,
+        ColorShiftTop = Lighting.ColorShift_Top,
+        ColorShiftBottom = Lighting.ColorShift_Bottom,
+        ExposureCompensation = Lighting.ExposureCompensation,
     }
+
+    local existing = LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ValarySafeUI")
+    if existing then
+        existing:Destroy()
+    end
 
     local gui = Create("ScreenGui", {
         Name = "ValarySafeUI",
@@ -295,6 +308,11 @@ function Library:CreateWindow(title)
     end
     Tween(blur, 0.18, {Size = 4})
     self.Blur = blur
+
+    local uiScale = Instance.new("UIScale")
+    uiScale.Scale = 1
+    uiScale.Parent = gui
+    self.UIScale = uiScale
 
     local main = Create("Frame", {
         Parent = gui,
@@ -360,7 +378,7 @@ function Library:CreateWindow(title)
         Size = UDim2.new(0, 52, 0, 18),
         Font = Enum.Font.Gotham,
         TextSize = 11,
-        Text = "v2.0.0",
+        Text = "v2.1.0",
         TextColor3 = Theme.SubText,
         ZIndex = 4,
     })
@@ -461,8 +479,9 @@ function Library:CreateWindow(title)
         ScrollingDirection = Enum.ScrollingDirection.X,
         ClipsDescendants = true,
     })
+    self.MainTabsScroll = mainTabsScroll
 
-    Create("UIListLayout", {
+    local mainTabsLayout = Create("UIListLayout", {
         Parent = mainTabsScroll,
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -495,8 +514,9 @@ function Library:CreateWindow(title)
         ScrollingDirection = Enum.ScrollingDirection.X,
         ClipsDescendants = true,
     })
+    self.SubTabsScroll = subTabsScroll
 
-    Create("UIListLayout", {
+    local subTabsLayout = Create("UIListLayout", {
         Parent = subTabsScroll,
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -512,6 +532,14 @@ function Library:CreateWindow(title)
         ZIndex = 80,
     })
 
+    mainTabsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        mainTabsScroll.CanvasSize = UDim2.new(0, mainTabsLayout.AbsoluteContentSize.X + 10, 0, 0)
+    end)
+
+    subTabsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        subTabsScroll.CanvasSize = UDim2.new(0, subTabsLayout.AbsoluteContentSize.X + 10, 0, 0)
+    end)
+
     function self:RegisterAccentObject(obj, mode)
         if not obj then
             return
@@ -525,6 +553,19 @@ function Library:CreateWindow(title)
             obj.Color = Theme.Accent
         elseif mode == "text" then
             obj.TextColor3 = Theme.Accent
+        end
+    end
+
+    function self:PlayMenuSound(kind)
+        if not self._MenuSounds then
+            return
+        end
+        if kind == "open" then
+            playOpen()
+        elseif kind == "close" then
+            playClose()
+        else
+            playPop()
         end
     end
 
@@ -590,14 +631,6 @@ function Library:CreateWindow(title)
             self.BrandAccent.TextColor3 = color
         end
 
-        for _, picker in ipairs(self.ColorPickers) do
-            if picker.Preview and picker.Preview.Parent then
-                if not picker.ApplyToAccent then
-                    picker.Preview.BackgroundColor3 = picker.Preview.BackgroundColor3
-                end
-            end
-        end
-
         for _, obj in ipairs(self.AccentObjects or {}) do
             if obj and obj.Parent then
                 local mode = obj:GetAttribute("AccentMode")
@@ -633,8 +666,8 @@ function Library:CreateWindow(title)
             Lighting.Ambient = c
             Lighting.OutdoorAmbient = c
         else
-            Lighting.Ambient = Color3.fromRGB(70, 70, 70)
-            Lighting.OutdoorAmbient = Color3.fromRGB(70, 70, 70)
+            Lighting.Ambient = self._OriginalLighting.Ambient
+            Lighting.OutdoorAmbient = self._OriginalLighting.OutdoorAmbient
         end
     end
 
@@ -653,10 +686,14 @@ function Library:CreateWindow(title)
             Lighting.Ambient = Color3.fromRGB(200, 200, 200)
             Lighting.OutdoorAmbient = Color3.fromRGB(200, 200, 200)
         else
-            Lighting.GlobalShadows = true
+            Lighting.GlobalShadows = self._OriginalLighting.GlobalShadows
+            Lighting.Brightness = self._OriginalLighting.Brightness
             if self._AmbientEnabled then
                 Lighting.Ambient = self._AmbientColor
                 Lighting.OutdoorAmbient = self._AmbientColor
+            else
+                Lighting.Ambient = self._OriginalLighting.Ambient
+                Lighting.OutdoorAmbient = self._OriginalLighting.OutdoorAmbient
             end
         end
     end
@@ -678,13 +715,14 @@ function Library:CreateWindow(title)
     end
 
     function self:ApplyBlurEnabled(state)
+        self._BlurEnabled = state and true or false
         if self.Blur then
-            self.Blur.Size = state and 4 or 0
+            self.Blur.Size = self._BlurEnabled and 4 or 0
         end
     end
 
     function self:ApplyBlurSize(value)
-        if self.Blur then
+        if self.Blur and self._BlurEnabled then
             self.Blur.Size = tonumber(value) or 0
         end
     end
@@ -721,6 +759,26 @@ function Library:CreateWindow(title)
         end
     end
 
+    function self:ApplyFogEnd(value)
+        Lighting.FogEnd = tonumber(value) or 100000
+    end
+
+    function self:ApplyExposure(value)
+        Lighting.ExposureCompensation = tonumber(value) or 0
+    end
+
+    function self:ApplyColorShiftTop(color)
+        Lighting.ColorShift_Top = color
+    end
+
+    function self:ApplyColorShiftBottom(color)
+        Lighting.ColorShift_Bottom = color
+    end
+
+    function self:ApplyShadows(state)
+        Lighting.GlobalShadows = state and true or false
+    end
+
     function self:ApplyPreviewVisible(state)
         if state then
             self:CreatePreviewPanel()
@@ -739,8 +797,9 @@ function Library:CreateWindow(title)
     end
 
     function self:ApplyBottomTabsVisible(state)
-        self.MainTabsHolder.Visible = state and true or false
-        self.SubTabHolder.Visible = (state and self.CurrentTab and (#self.CurrentTab.SubTabs > 0)) and true or false
+        self._BottomTabsVisible = state and true or false
+        self.MainTabsHolder.Visible = self._BottomTabsVisible
+        self.SubTabHolder.Visible = self._BottomTabsVisible and self.CurrentTab and (#self.CurrentTab.SubTabs > 0) and self.Pages.Visible
     end
 
     function self:ApplyAccentColor(color)
@@ -749,6 +808,21 @@ function Library:CreateWindow(title)
 
     function self:ApplyHideKey(key)
         self.HideKey = key
+    end
+
+    function self:ApplyUIScale(value)
+        self._UIScaleValue = tonumber(value) or 1
+        if self.UIScale then
+            self.UIScale.Scale = self._UIScaleValue
+        end
+    end
+
+    function self:ApplyMenuSounds(value)
+        self._MenuSounds = value and true or false
+    end
+
+    function self:ApplySmoothOpen(value)
+        self._SmoothOpen = value and true or false
     end
 
     function self:ApplyWalkSpeed(value)
@@ -768,6 +842,45 @@ function Library:CreateWindow(title)
         end
     end
 
+    function self:ApplyVisualPreset(name)
+        if name == "Default" then
+            self:ApplyBrightness(2)
+            self:ApplyClockTime(14)
+            self:ApplyFogEnd(100000)
+            self:ApplyExposure(0)
+            Lighting.ColorShift_Top = Color3.new(0,0,0)
+            Lighting.ColorShift_Bottom = Color3.new(0,0,0)
+        elseif name == "Night" then
+            self:ApplyBrightness(1)
+            self:ApplyClockTime(1)
+            self:ApplyFogEnd(500)
+            self:ApplyExposure(-0.2)
+            Lighting.ColorShift_Top = Color3.fromRGB(0, 20, 50)
+            Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 20)
+        elseif name == "Warm" then
+            self:ApplyBrightness(2.5)
+            self:ApplyClockTime(17)
+            self:ApplyFogEnd(3000)
+            self:ApplyExposure(0.15)
+            Lighting.ColorShift_Top = Color3.fromRGB(40, 18, 0)
+            Lighting.ColorShift_Bottom = Color3.fromRGB(20, 10, 0)
+        elseif name == "Cold" then
+            self:ApplyBrightness(2)
+            self:ApplyClockTime(11)
+            self:ApplyFogEnd(3000)
+            self:ApplyExposure(0.05)
+            Lighting.ColorShift_Top = Color3.fromRGB(0, 20, 40)
+            Lighting.ColorShift_Bottom = Color3.fromRGB(0, 10, 25)
+        elseif name == "Studio" then
+            self:ApplyBrightness(3)
+            self:ApplyClockTime(14)
+            self:ApplyFogEnd(100000)
+            self:ApplyExposure(0.2)
+            Lighting.ColorShift_Top = Color3.fromRGB(8, 8, 8)
+            Lighting.ColorShift_Bottom = Color3.fromRGB(0, 0, 0)
+        end
+    end
+
     function self:RefreshCharacterPreview()
         if self.PreviewPanel and self.PreviewPanel.Visible then
             self.PreviewPanel:Destroy()
@@ -776,12 +889,16 @@ function Library:CreateWindow(title)
                 self.PreviewConn:Disconnect()
                 self.PreviewConn = nil
             end
+            if self.CharacterAddedConn then
+                self.CharacterAddedConn:Disconnect()
+                self.CharacterAddedConn = nil
+            end
             self:CreatePreviewPanel()
         end
     end
 
     close.MouseButton1Click:Connect(function()
-        playClose()
+        self:PlayMenuSound("close")
         Tween(blur, 0.15, {Size = 0})
         task.delay(0.18, function()
             if blur then
@@ -805,13 +922,20 @@ function Library:CreateWindow(title)
     local minimized = false
     minimize.MouseButton1Click:Connect(function()
         minimized = not minimized
-        playPop()
-        Tween(main, 0.18, {
-            Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
-        })
+        self:PlayMenuSound("pop")
+
+        if self._SmoothOpen then
+            Tween(main, 0.18, {
+                Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
+            })
+        else
+            main.Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
+        end
+
         pages.Visible = not minimized
         searchFrame.Visible = not minimized
-        subTabHolder.Visible = (not minimized) and self.CurrentTab and (#self.CurrentTab.SubTabs > 0) or false
+        subTabHolder.Visible = (not minimized) and self._BottomTabsVisible and self.CurrentTab and (#self.CurrentTab.SubTabs > 0) or false
+        mainTabsHolder.Visible = (not minimized) and self._BottomTabsVisible or false
     end)
 
     UIS.InputBegan:Connect(function(input, gp)
@@ -821,11 +945,14 @@ function Library:CreateWindow(title)
         if input.KeyCode == self.HideKey then
             self.MenuVisible = not self.MenuVisible
             main.Visible = self.MenuVisible
+            if self.PreviewPanel then
+                self.PreviewPanel.Visible = self.MenuVisible and self.PreviewPanel.Visible
+            end
 
             if self.MenuVisible then
-                playOpen()
+                self:PlayMenuSound("open")
             else
-                playClose()
+                self:PlayMenuSound("close")
             end
         end
     end)
@@ -866,6 +993,12 @@ function Library:CreateWindow(title)
     end)
 
     function self:AddTab(name)
+        for _, existingTab in ipairs(self.Tabs) do
+            if existingTab.Name == name then
+                return existingTab
+            end
+        end
+
         local Tab = {
             Name = name,
             SubTabs = {},
@@ -890,6 +1023,12 @@ function Library:CreateWindow(title)
         Tab.Button = tabButton
 
         function Tab:AddSubTab(subName)
+            for _, existingSub in ipairs(self.SubTabs) do
+                if existingSub.Name == subName then
+                    return existingSub
+                end
+            end
+
             local Sub = {
                 Name = subName,
                 Sections = {},
@@ -1095,7 +1234,7 @@ function Library:CreateWindow(title)
                     setHover(btn, Theme.Element, Theme.ElementHover, st)
 
                     btn.MouseButton1Click:Connect(function()
-                        playPop()
+                        self.ParentWindow:PlayMenuSound("pop")
                         if callback then
                             task.spawn(callback)
                         end
@@ -1163,12 +1302,18 @@ function Library:CreateWindow(title)
 
                     switch.MouseButton1Click:Connect(function()
                         state = not state
-                        playPop()
+                        self.ParentWindow:PlayMenuSound("pop")
                         render()
                         if callback then
                             callback(state)
                         end
                     end)
+
+                    if callback then
+                        task.defer(function()
+                            callback(state)
+                        end)
+                    end
 
                     register(wrap, text)
                     return {
@@ -1350,7 +1495,7 @@ function Library:CreateWindow(title)
                         setHover(opt, Theme.Element, Theme.ElementHover, os)
 
                         opt.MouseButton1Click:Connect(function()
-                            playPop()
+                            self.ParentWindow:PlayMenuSound("pop")
                             current = option
                             button.Text = "  " .. tostring(option)
                             open = false
@@ -1363,7 +1508,7 @@ function Library:CreateWindow(title)
                     end
 
                     button.MouseButton1Click:Connect(function()
-                        playPop()
+                        self.ParentWindow:PlayMenuSound("pop")
                         open = not open
                         local height = #(items or {}) * 32
                         Tween(listHolder, 0.15, {
@@ -1373,6 +1518,12 @@ function Library:CreateWindow(title)
                             Size = open and UDim2.new(1, 0, 0, 38 + height) or UDim2.new(1, 0, 0, 34)
                         })
                     end)
+
+                    if callback and current ~= nil then
+                        task.defer(function()
+                            callback(current)
+                        end)
+                    end
 
                     register(wrap, text)
                     return {
@@ -1581,7 +1732,7 @@ function Library:CreateWindow(title)
                     end)
 
                     button.MouseButton1Click:Connect(function()
-                        playPop()
+                        self.ParentWindow:PlayMenuSound("pop")
                         open = not open
                         Tween(panel, 0.15, {
                             Size = open and UDim2.new(1, 0, 0, 78) or UDim2.new(1, 0, 0, 0)
@@ -1623,7 +1774,7 @@ function Library:CreateWindow(title)
             Sub.Section = Sub.AddSection
 
             subButton.MouseButton1Click:Connect(function()
-                playPop()
+                self.ParentWindow:PlayMenuSound("pop")
                 Sub:Show()
             end)
 
@@ -1647,7 +1798,6 @@ function Library:CreateWindow(title)
                     s.Page.Visible = false
                     if s.Button then
                         s.Button.Visible = false
-                        s.Button.Parent = subTabsScroll
                     end
                 end
             end
@@ -1663,11 +1813,10 @@ function Library:CreateWindow(title)
 
             self.ParentWindow.CurrentTab = self
 
-            subTabHolder.Visible = #self.SubTabs > 0 and pages.Visible
+            subTabHolder.Visible = self.ParentWindow._BottomTabsVisible and #self.SubTabs > 0 and pages.Visible
             for _, s in ipairs(self.SubTabs) do
                 if s.Button then
                     s.Button.Visible = true
-                    s.Button.Parent = subTabsScroll
                 end
             end
 
@@ -1679,7 +1828,7 @@ function Library:CreateWindow(title)
         Tab.SubTab = Tab.AddSubTab
 
         tabButton.MouseButton1Click:Connect(function()
-            playPop()
+            self:PlayMenuSound("pop")
             Tab:Show()
         end)
 
@@ -1756,7 +1905,7 @@ function Library:CreateWindow(title)
     end
 
     function self:BuildDemo()
-        playPop()
+        self:PlayMenuSound("pop")
         self:Notify("UI loaded successfully")
 
         local combatTab = self:AddTab("Combat")
@@ -1798,6 +1947,9 @@ function Library:CreateWindow(title)
             left:AddSlider("Clock Time", 0, 24, 14, function(v)
                 self:ApplyClockTime(v)
             end)
+            left:AddSlider("Fog End", 100, 100000, 100000, function(v)
+                self:ApplyFogEnd(v)
+            end)
 
             local right = world:AddSection("Camera", "right")
             right:AddSlider("Field Of View", 40, 120, 70, function(v)
@@ -1829,8 +1981,12 @@ function Library:CreateWindow(title)
             left:AddToggle("Show Bottom Tabs", true, function(v)
                 self:ApplyBottomTabsVisible(v)
             end)
-            left:AddToggle("Menu Sounds", true)
-            left:AddToggle("Smooth Open", true)
+            left:AddToggle("Menu Sounds", true, function(v)
+                self:ApplyMenuSounds(v)
+            end)
+            left:AddToggle("Smooth Open", true, function(v)
+                self:ApplySmoothOpen(v)
+            end)
 
             local right = uiVisual:AddSection("Theme", "right")
             right:AddColorPicker("UI Accent", Theme.Accent, function(c)
@@ -1843,7 +1999,9 @@ function Library:CreateWindow(title)
                 if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
                 if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
             end)
-            right:AddSlider("UI Scale Preview", 0.8, 1.3, 1)
+            right:AddSlider("UI Scale", 0.8, 1.3, 1, function(v)
+                self:ApplyUIScale(v)
+            end)
             right:AddToggle("Rounded Theme", true)
         end
 
@@ -1856,11 +2014,11 @@ function Library:CreateWindow(title)
             left:AddSlider("Preview Rotation Speed", 1, 40, 16, function(v)
                 self:ApplyPreviewRotationSpeed(v)
             end)
-            left:AddColorPicker("Preview Accent", Theme.Accent)
             left:AddButton("Refresh Character", function()
                 self:RefreshCharacterPreview()
                 self:Notify("Character refreshed")
             end)
+            left:AddLabel("Visual preview panel for your character.")
 
             local right = players:AddSection("Player", "right")
             right:AddSlider("Walk Speed", 8, 40, 16, function(v)
@@ -1874,6 +2032,40 @@ function Library:CreateWindow(title)
             right:AddToggle("Show Health Text", false)
             right:AddSlider("Name Size", 8, 24, 13)
             right:AddSlider("Distance Size", 8, 24, 11)
+        end
+
+        local lighting = visualsTab:AddSubTab("Lighting")
+        do
+            local left = lighting:AddSection("Presets", "left")
+            left:AddDropdown("Visual Preset", {"Default", "Night", "Warm", "Cold", "Studio"}, "Default", function(v)
+                self:ApplyVisualPreset(v)
+            end)
+            left:AddToggle("Shadows", true, function(v)
+                self:ApplyShadows(v)
+            end)
+            left:AddSlider("Exposure", -5, 5, 0, function(v)
+                self:ApplyExposure(v)
+            end)
+
+            local right = lighting:AddSection("Color Shift", "right")
+            right:AddColorPicker("Top Color", Color3.new(0,0,0), function(c)
+                self:ApplyColorShiftTop(c)
+            end)
+            right:AddColorPicker("Bottom Color", Color3.new(0,0,0), function(c)
+                self:ApplyColorShiftBottom(c)
+            end)
+            right:AddButton("Reset Lighting", function()
+                Lighting.Brightness = self._OriginalLighting.Brightness
+                Lighting.ClockTime = self._OriginalLighting.ClockTime
+                Lighting.Ambient = self._OriginalLighting.Ambient
+                Lighting.OutdoorAmbient = self._OriginalLighting.OutdoorAmbient
+                Lighting.GlobalShadows = self._OriginalLighting.GlobalShadows
+                Lighting.FogEnd = self._OriginalLighting.FogEnd
+                Lighting.ColorShift_Top = self._OriginalLighting.ColorShiftTop
+                Lighting.ColorShift_Bottom = self._OriginalLighting.ColorShiftBottom
+                Lighting.ExposureCompensation = self._OriginalLighting.ExposureCompensation
+                self:Notify("Lighting reset")
+            end)
         end
 
         local settingsMain = settingsTab:AddSubTab("Main")
@@ -1917,14 +2109,22 @@ function Library:CreateWindow(title)
             end)
 
             local right = settingsTheme:AddSection("Misc", "right")
-            right:AddToggle("Intro Sound", true)
-            right:AddToggle("Button Sound", true)
+            right:AddToggle("Intro Sound", true, function(v)
+                self:ApplyMenuSounds(v)
+            end)
+            right:AddToggle("Button Sound", true, function(v)
+                self:ApplyMenuSounds(v)
+            end)
             right:AddSlider("Animation Speed", 0.05, 1, 0.18)
         end
 
         combatTab:Show()
         self:ApplySearch("")
         self:SetAccent(Theme.Accent)
+        self:ApplyBottomTabsVisible(true)
+        self:ApplyBlurEnabled(true)
+        self:ApplyUIScale(1)
+        self:ApplyVisualPreset("Default")
     end
 
     self:BuildDemo()
