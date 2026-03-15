@@ -83,23 +83,6 @@ local function Padding(obj, l, r, t, b)
     return p
 end
 
-local function makeGlow(parent, z)
-    local glow = Create("ImageLabel", {
-        Parent = parent,
-        AnchorPoint = Vector2.new(0.5, 0.5),
-        Position = UDim2.new(0.5, 0, 0.5, 0),
-        Size = UDim2.new(1, 70, 1, 70),
-        BackgroundTransparency = 1,
-        Image = "rbxassetid://5028857084",
-        ImageColor3 = Color3.fromRGB(0, 0, 0),
-        ImageTransparency = 0.5,
-        ScaleType = Enum.ScaleType.Slice,
-        SliceCenter = Rect.new(24, 24, 276, 276),
-        ZIndex = z or 0,
-    })
-    return glow
-end
-
 local function setHover(button, normalColor, hoverColor, strokeObj)
     button.MouseEnter:Connect(function()
         Tween(button, 0.12, {BackgroundColor3 = hoverColor or Theme.ElementHover})
@@ -157,19 +140,37 @@ local function dragify(handle, target)
     end)
 end
 
-local function playPop()
-    local success, sound = pcall(function()
+local function playSound(soundId, volume, speed)
+    local ok, sound = pcall(function()
         local s = Instance.new("Sound")
-        s.SoundId = "rbxassetid://9118828561"
-        s.Volume = 0.55
-        s.PlayOnRemove = true
+        s.SoundId = soundId
+        s.Volume = volume or 0.45
+        s.PlaybackSpeed = speed or 1
+        s.RollOffMaxDistance = 100
         s.Parent = workspace
         return s
     end)
 
-    if success and sound then
-        sound:Destroy()
+    if ok and sound then
+        sound:Play()
+        task.delay(1, function()
+            if sound then
+                sound:Destroy()
+            end
+        end)
     end
+end
+
+local function playPop()
+    playSound("rbxassetid://9118828561", 0.4, 1)
+end
+
+local function playOpen()
+    playSound("rbxassetid://6026984224", 0.35, 1)
+end
+
+local function playClose()
+    playSound("rbxassetid://6026984224", 0.3, 0.92)
 end
 
 local function getSafeCharacter()
@@ -239,7 +240,7 @@ local function cloneCharacter(viewport)
         end)
     end
 
-    cam.CFrame = CFrame.new(Vector3.new(0, 1.5, 5.8), Vector3.new(0, 1.5, 0))
+    cam.CFrame = CFrame.new(Vector3.new(0, 1.5, 6.6), Vector3.new(0, 1.5, 0))
 
     local light = Instance.new("PointLight")
     light.Range = 24
@@ -260,6 +261,11 @@ function Library:CreateWindow(title)
     self.ColorPickers = {}
     self.AccentObjects = {}
     self.LiveToggles = {}
+    self.StretchEnabled = false
+    self.StretchAmount = 0
+    self.BaseFOV = 70
+    self.PreviewRotationSpeed = 16
+
     self.FOVVisual = {
         Enabled = true,
         Radius = 120,
@@ -288,7 +294,7 @@ function Library:CreateWindow(title)
     if fovCircle then
         fovCircle.Visible = false
         fovCircle.Filled = false
-        fovCircle.NumSides = 64
+        fovCircle.NumSides = 80
         fovCircle.Color = self.FOVVisual.Color
         fovCircle.Radius = self.FOVVisual.Radius
         fovCircle.Thickness = self.FOVVisual.Thickness
@@ -305,7 +311,6 @@ function Library:CreateWindow(title)
         ClipsDescendants = false,
     })
     self.Main = main
-    makeGlow(main, 0)
     Corner(main, 12)
     Stroke(main, Theme.Border, 1)
 
@@ -441,13 +446,12 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 270, 0, 42),
-        Position = UDim2.new(0.5, -135, 1, 18),
+        Size = UDim2.new(0, 340, 0, 42),
+        Position = UDim2.new(0.5, -170, 1, 28),
         ZIndex = 20,
         ClipsDescendants = true,
     })
     self.MainTabsHolder = mainTabsHolder
-    makeGlow(mainTabsHolder, 19)
     Corner(mainTabsHolder, 999)
     Stroke(mainTabsHolder, Theme.Border, 1)
     Padding(mainTabsHolder, 8, 8, 6, 6)
@@ -474,14 +478,13 @@ function Library:CreateWindow(title)
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 240, 0, 40),
-        Position = UDim2.new(0.5, -120, 1, -18),
+        Size = UDim2.new(0, 270, 0, 40),
+        Position = UDim2.new(0.5, -135, 1, -4),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
     })
     self.SubTabHolder = subTabHolder
-    makeGlow(subTabHolder, 17)
     Corner(subTabHolder, 999)
     Stroke(subTabHolder, Theme.Border, 1)
     Padding(subTabHolder, 8, 8, 6, 6)
@@ -548,8 +551,8 @@ function Library:CreateWindow(title)
     end
 
     function self:RepositionBottomBars()
-        self.MainTabsHolder.Position = UDim2.new(0.5, -135, 1, 18)
-        self.SubTabHolder.Position = UDim2.new(0.5, -120, 1, -18)
+        self.MainTabsHolder.Position = UDim2.new(0.5, -170, 1, 28)
+        self.SubTabHolder.Position = UDim2.new(0.5, -135, 1, -4)
     end
     self:RepositionBottomBars()
 
@@ -564,7 +567,6 @@ function Library:CreateWindow(title)
         })
         Corner(card, 8)
         Stroke(card, Theme.Border, 1)
-        makeGlow(card, 79)
 
         local bar = Create("Frame", {
             Parent = card,
@@ -646,6 +648,8 @@ function Library:CreateWindow(title)
     end
 
     close.MouseButton1Click:Connect(function()
+        playClose()
+
         if self.FOVCircle then
             self.FOVCircle.Visible = false
             self.FOVCircle:Remove()
@@ -664,6 +668,7 @@ function Library:CreateWindow(title)
     local minimized = false
     minimize.MouseButton1Click:Connect(function()
         minimized = not minimized
+        playPop()
         Tween(main, 0.18, {
             Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
         })
@@ -679,6 +684,12 @@ function Library:CreateWindow(title)
         if input.KeyCode == self.HideKey then
             self.MenuVisible = not self.MenuVisible
             main.Visible = self.MenuVisible
+
+            if self.MenuVisible then
+                playOpen()
+            else
+                playClose()
+            end
         end
     end)
 
@@ -947,6 +958,7 @@ function Library:CreateWindow(title)
                     setHover(btn, Theme.Element, Theme.ElementHover, st)
 
                     btn.MouseButton1Click:Connect(function()
+                        playPop()
                         if callback then
                             task.spawn(callback)
                         end
@@ -1014,6 +1026,7 @@ function Library:CreateWindow(title)
 
                     switch.MouseButton1Click:Connect(function()
                         state = not state
+                        playPop()
                         render()
                         if callback then
                             callback(state)
@@ -1197,6 +1210,7 @@ function Library:CreateWindow(title)
                         setHover(opt, Theme.Element, Theme.ElementHover, os)
 
                         opt.MouseButton1Click:Connect(function()
+                            playPop()
                             current = option
                             button.Text = "  " .. tostring(option)
                             open = false
@@ -1209,6 +1223,7 @@ function Library:CreateWindow(title)
                     end
 
                     button.MouseButton1Click:Connect(function()
+                        playPop()
                         open = not open
                         local height = #(items or {}) * 32
                         Tween(listHolder, 0.15, {
@@ -1426,6 +1441,7 @@ function Library:CreateWindow(title)
                     end)
 
                     button.MouseButton1Click:Connect(function()
+                        playPop()
                         open = not open
                         Tween(panel, 0.15, {
                             Size = open and UDim2.new(1, 0, 0, 78) or UDim2.new(1, 0, 0, 0)
@@ -1542,11 +1558,10 @@ function Library:CreateWindow(title)
         local preview = Create("Frame", {
             Parent = main,
             BackgroundColor3 = Theme.Panel,
-            Size = UDim2.new(0, 170, 0, 320),
-            Position = UDim2.new(1, 12, 0, 96),
+            Size = UDim2.new(0, 215, 0, 380),
+            Position = UDim2.new(1, 14, 0, 86),
             ZIndex = 4,
         })
-        makeGlow(preview, 3)
         Corner(preview, 8)
         Stroke(preview, Theme.Border, 1)
 
@@ -1566,8 +1581,8 @@ function Library:CreateWindow(title)
             Parent = preview,
             BackgroundColor3 = Theme.Main2,
             BorderSizePixel = 0,
-            Position = UDim2.new(0, 8, 0, 34),
-            Size = UDim2.new(1, -16, 1, -42),
+            Position = UDim2.new(0, 10, 0, 34),
+            Size = UDim2.new(1, -20, 1, -46),
         })
         Corner(viewport, 6)
         Stroke(viewport, Theme.Border, 1)
@@ -1576,7 +1591,7 @@ function Library:CreateWindow(title)
         local conn = RunService.RenderStepped:Connect(function(dt)
             if clone and clone.Parent and clone.PrimaryPart then
                 pcall(function()
-                    clone:PivotTo(clone:GetPivot() * CFrame.Angles(0, math.rad(16 * dt), 0))
+                    clone:PivotTo(clone:GetPivot() * CFrame.Angles(0, math.rad(self.PreviewRotationSpeed * dt), 0))
                 end)
             end
         end)
@@ -1649,12 +1664,39 @@ function Library:CreateWindow(title)
             left:AddSlider("Clock Time", 0, 24, 14)
 
             local right = world:AddSection("Camera", "right")
+
             right:AddSlider("Field Of View", 40, 120, 70, function(v)
+                self.BaseFOV = v
                 local cam = workspace.CurrentCamera
                 if cam then
-                    cam.FieldOfView = v
+                    if self.StretchEnabled then
+                        cam.FieldOfView = v + (self.StretchAmount * 0.35)
+                    else
+                        cam.FieldOfView = v
+                    end
                 end
             end)
+
+            right:AddToggle("Enabled Resolution", false, function(v)
+                self.StretchEnabled = v
+                local cam = workspace.CurrentCamera
+                if cam then
+                    if v then
+                        cam.FieldOfView = self.BaseFOV + (self.StretchAmount * 0.35)
+                    else
+                        cam.FieldOfView = self.BaseFOV
+                    end
+                end
+            end)
+
+            right:AddSlider("Stretch Amount", 0, 40, 0, function(v)
+                self.StretchAmount = v
+                local cam = workspace.CurrentCamera
+                if cam and self.StretchEnabled then
+                    cam.FieldOfView = self.BaseFOV + (v * 0.35)
+                end
+            end)
+
             right:AddToggle("Fullbright", false, function(v)
                 if v then
                     Lighting.Brightness = 3
@@ -1664,6 +1706,7 @@ function Library:CreateWindow(title)
                     Lighting.GlobalShadows = true
                 end
             end)
+
             right:AddToggle("Depth Blur", false, function(v)
                 local eff = Lighting:FindFirstChild("ValaryDepthBlur")
                 if v then
@@ -1696,7 +1739,9 @@ function Library:CreateWindow(title)
                     end
                 end
             end)
-            left:AddSlider("Preview Rotation Speed", 1, 40, 16)
+            left:AddSlider("Preview Rotation Speed", 1, 40, 16, function(v)
+                self.PreviewRotationSpeed = v
+            end)
             left:AddColorPicker("Preview Accent", Theme.Accent)
 
             local right = players:AddSection("Labels", "right")
@@ -1757,55 +1802,6 @@ function Library:CreateWindow(title)
         self:ApplySearch("")
         self:SetAccent(Theme.Accent)
         self:UpdateFOVCircle()
-    end
-
-    self._CompatTab = nil
-    self._CompatSub = nil
-    self._CompatSection = nil
-
-    function self:GetCompatSection()
-        if self._CompatSection then
-            return self._CompatSection
-        end
-
-        self._CompatTab = self:AddTab("Main")
-        self._CompatSub = self._CompatTab:AddSubTab("Home")
-        self._CompatSection = self._CompatSub:AddSection("General", "left")
-        self._CompatTab:Show()
-
-        return self._CompatSection
-    end
-
-    function self:Button(text, callback)
-        return self:GetCompatSection():AddButton(text, callback)
-    end
-
-    function self:Toggle(text, default, callback)
-        if type(default) == "function" and callback == nil then
-            callback = default
-            default = false
-        end
-        return self:GetCompatSection():AddToggle(text, default or false, callback)
-    end
-
-    function self:Slider(text, min, max, default, callback)
-        return self:GetCompatSection():AddSlider(text, min, max, default, callback)
-    end
-
-    function self:Dropdown(text, items, default, callback)
-        return self:GetCompatSection():AddDropdown(text, items, default, callback)
-    end
-
-    function self:ColorPicker(text, defaultColor, callback, applyToAccent)
-        return self:GetCompatSection():AddColorPicker(text, defaultColor, callback, applyToAccent)
-    end
-
-    function self:Keybind(text, defaultKey, callback)
-        return self:GetCompatSection():AddKeybind(text, defaultKey, callback)
-    end
-
-    function self:Label(text, color)
-        return self:GetCompatSection():AddLabel(text, color)
     end
 
     RunService.RenderStepped:Connect(function()
