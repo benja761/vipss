@@ -36,7 +36,6 @@ local Icons = {
     Combat = "✦",
     Visuals = "◉",
     Player = "◎",
-    Settings = "⚙",
 }
 
 local function Create(class, props)
@@ -260,6 +259,7 @@ function Library:CreateWindow(title)
     self.HideKey = Enum.KeyCode.Z
     self.ColorPickers = {}
     self.AccentObjects = {}
+    self.LiveToggles = {}
     self.FOVVisual = {
         Enabled = true,
         Radius = 120,
@@ -441,8 +441,8 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 320, 0, 42),
-        Position = UDim2.new(0.5, -160, 1, 10),
+        Size = UDim2.new(0, 270, 0, 42),
+        Position = UDim2.new(0.5, -135, 1, 18),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -474,8 +474,8 @@ function Library:CreateWindow(title)
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 260, 0, 40),
-        Position = UDim2.new(0.5, -130, 1, -36),
+        Size = UDim2.new(0, 240, 0, 40),
+        Position = UDim2.new(0.5, -120, 1, -18),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
@@ -534,7 +534,7 @@ function Library:CreateWindow(title)
             return
         end
 
-        self.FOVCircle.Visible = self.FOVVisual.Enabled and self.MenuVisible
+        self.FOVCircle.Visible = self.FOVVisual.Enabled
         self.FOVCircle.Radius = self.FOVVisual.Radius
         self.FOVCircle.Thickness = self.FOVVisual.Thickness
         self.FOVCircle.Color = self.FOVVisual.Color
@@ -548,8 +548,8 @@ function Library:CreateWindow(title)
     end
 
     function self:RepositionBottomBars()
-        self.MainTabsHolder.Position = UDim2.new(0.5, -160, 1, 10)
-        self.SubTabHolder.Position = UDim2.new(0.5, -130, 1, -36)
+        self.MainTabsHolder.Position = UDim2.new(0.5, -135, 1, 18)
+        self.SubTabHolder.Position = UDim2.new(0.5, -120, 1, -18)
     end
     self:RepositionBottomBars()
 
@@ -635,6 +635,12 @@ function Library:CreateWindow(title)
             end
         end
 
+        for _, toggleData in ipairs(self.LiveToggles or {}) do
+            if toggleData and toggleData.Render and toggleData.Switch and toggleData.Switch.Parent then
+                toggleData.Render()
+            end
+        end
+
         self.FOVVisual.Color = color
         self:UpdateFOVCircle()
     end
@@ -673,7 +679,6 @@ function Library:CreateWindow(title)
         if input.KeyCode == self.HideKey then
             self.MenuVisible = not self.MenuVisible
             main.Visible = self.MenuVisible
-            self:UpdateFOVCircle()
         end
     end)
 
@@ -862,7 +867,7 @@ function Library:CreateWindow(title)
                 Stroke(root, Theme.Border, 1)
                 Section.Root = root
 
-                local titleLabel = Create("TextLabel", {
+                Create("TextLabel", {
                     Parent = root,
                     BackgroundTransparency = 1,
                     Position = UDim2.new(0, 12, 0, 8),
@@ -1001,6 +1006,11 @@ function Library:CreateWindow(title)
                     end
 
                     render()
+
+                    table.insert(self.ParentWindow.LiveToggles, {
+                        Switch = switch,
+                        Render = render
+                    })
 
                     switch.MouseButton1Click:Connect(function()
                         state = not state
@@ -1254,9 +1264,7 @@ function Library:CreateWindow(title)
 
                 function Section:AddColorPicker(text, defaultColor, callback, applyToAccent)
                     local start = defaultColor or Theme.Accent
-                    local r0 = math.floor(start.R * 255 + 0.5)
-                    local g0 = math.floor(start.G * 255 + 0.5)
-                    local b0 = math.floor(start.B * 255 + 0.5)
+                    local h, s, v = start:ToHSV()
 
                     local wrap = Create("Frame", {
                         Parent = holder,
@@ -1310,31 +1318,54 @@ function Library:CreateWindow(title)
                     })
                     Corner(panel, 8)
                     Stroke(panel, Theme.Border, 1)
+                    Padding(panel, 10, 10, 10, 10)
 
-                    local pad = Padding(panel, 10, 10, 10, 10)
-                    pad.Parent = panel
-
-                    local rgbHolder = Create("Frame", {
+                    local hueSlider = Create("Frame", {
                         Parent = panel,
-                        BackgroundTransparency = 1,
-                        Size = UDim2.new(1, 0, 0, 96),
+                        BackgroundColor3 = Theme.Element,
+                        BorderSizePixel = 0,
+                        Position = UDim2.new(0, 0, 0, 0),
+                        Size = UDim2.new(1, 0, 0, 12),
                     })
+                    Corner(hueSlider, 999)
+                    Stroke(hueSlider, Theme.Border, 1)
 
-                    Create("UIListLayout", {
-                        Parent = rgbHolder,
-                        Padding = UDim.new(0, 8),
-                        SortOrder = Enum.SortOrder.LayoutOrder,
+                    local hueFill = Create("UIGradient")
+                    hueFill.Color = ColorSequence.new({
+                        ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 0, 0)),
+                        ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
+                        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+                        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
+                        ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
+                        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+                        ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0)),
                     })
+                    hueFill.Parent = hueSlider
+
+                    local satSlider = Create("Frame", {
+                        Parent = panel,
+                        BackgroundColor3 = Theme.Element,
+                        BorderSizePixel = 0,
+                        Position = UDim2.new(0, 0, 0, 28),
+                        Size = UDim2.new(1, 0, 0, 12),
+                    })
+                    Corner(satSlider, 999)
+                    Stroke(satSlider, Theme.Border, 1)
+
+                    local valSlider = Create("Frame", {
+                        Parent = panel,
+                        BackgroundColor3 = Theme.Element,
+                        BorderSizePixel = 0,
+                        Position = UDim2.new(0, 0, 0, 56),
+                        Size = UDim2.new(1, 0, 0, 12),
+                    })
+                    Corner(valSlider, 999)
+                    Stroke(valSlider, Theme.Border, 1)
 
                     local open = false
-                    local currentR, currentG, currentB = r0, g0, b0
 
-                    local function currentColor()
-                        return Color3.fromRGB(currentR, currentG, currentB)
-                    end
-
-                    local function applyColor()
-                        local c = currentColor()
+                    local function updateColor()
+                        local c = Color3.fromHSV(h, s, v)
                         preview.BackgroundColor3 = c
 
                         if callback then
@@ -1346,88 +1377,29 @@ function Library:CreateWindow(title)
                         end
                     end
 
-                    local function createRGBSlider(name, defaultValue, setter)
-                        local slot = Create("Frame", {
-                            Parent = rgbHolder,
-                            BackgroundTransparency = 1,
-                            Size = UDim2.new(1, 0, 0, 26),
-                        })
-
-                        Create("TextLabel", {
-                            Parent = slot,
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(0, 0, 0, 0),
-                            Size = UDim2.new(0, 18, 1, 0),
-                            Font = Enum.Font.GothamBold,
-                            Text = name,
-                            TextColor3 = Theme.Text,
-                            TextSize = 12,
-                        })
-
-                        local valueLabel = Create("TextLabel", {
-                            Parent = slot,
-                            BackgroundTransparency = 1,
-                            Position = UDim2.new(1, -34, 0, 0),
-                            Size = UDim2.new(0, 34, 1, 0),
-                            Font = Enum.Font.GothamBold,
-                            Text = tostring(defaultValue),
-                            TextColor3 = Theme.Text,
-                            TextSize = 12,
-                        })
-
-                        local bar = Create("Frame", {
-                            Parent = slot,
-                            BackgroundColor3 = Theme.Element,
-                            BorderSizePixel = 0,
-                            Position = UDim2.new(0, 24, 0.5, -4),
-                            Size = UDim2.new(1, -64, 0, 8),
-                        })
-                        Corner(bar, 999)
-                        Stroke(bar, Theme.Border, 1)
-
-                        local fill = Create("Frame", {
-                            Parent = bar,
-                            BackgroundColor3 = Theme.Accent,
-                            BorderSizePixel = 0,
-                            Size = UDim2.new(defaultValue / 255, 0, 1, 0),
-                        })
-                        Corner(fill, 999)
-                        self.ParentWindow:RegisterAccentObject(fill, "bg")
-
-                        local knob = Create("Frame", {
-                            Parent = bar,
-                            AnchorPoint = Vector2.new(0.5, 0.5),
-                            Position = UDim2.new(defaultValue / 255, 0, 0.5, 0),
-                            Size = UDim2.new(0, 12, 0, 12),
-                            BackgroundColor3 = Theme.Text,
-                            BorderSizePixel = 0,
-                        })
-                        Corner(knob, 999)
-
+                    local function bindSlider(slider, setter)
                         local dragging = false
 
-                        local function setFromPct(pct)
-                            pct = math.clamp(pct, 0, 1)
-                            local value = math.floor(pct * 255 + 0.5)
-                            fill.Size = UDim2.new(pct, 0, 1, 0)
-                            knob.Position = UDim2.new(pct, 0, 0.5, 0)
-                            valueLabel.Text = tostring(value)
-                            setter(value)
-                            applyColor()
-                        end
-
-                        bar.InputBegan:Connect(function(input)
+                        slider.InputBegan:Connect(function(input)
                             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                                 dragging = true
-                                local pct = (input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X
-                                setFromPct(pct)
+                                local pct = math.clamp(
+                                    (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X,
+                                    0,
+                                    1
+                                )
+                                setter(pct)
                             end
                         end)
 
                         UIS.InputChanged:Connect(function(input)
                             if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                                local pct = (input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X
-                                setFromPct(pct)
+                                local pct = math.clamp(
+                                    (input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X,
+                                    0,
+                                    1
+                                )
+                                setter(pct)
                             end
                         end)
 
@@ -1438,21 +1410,32 @@ function Library:CreateWindow(title)
                         end)
                     end
 
-                    createRGBSlider("R", currentR, function(v) currentR = v end)
-                    createRGBSlider("G", currentG, function(v) currentG = v end)
-                    createRGBSlider("B", currentB, function(v) currentB = v end)
+                    bindSlider(hueSlider, function(p)
+                        h = p
+                        updateColor()
+                    end)
+
+                    bindSlider(satSlider, function(p)
+                        s = p
+                        updateColor()
+                    end)
+
+                    bindSlider(valSlider, function(p)
+                        v = p
+                        updateColor()
+                    end)
 
                     button.MouseButton1Click:Connect(function()
                         open = not open
                         Tween(panel, 0.15, {
-                            Size = open and UDim2.new(1, 0, 0, 116) or UDim2.new(1, 0, 0, 0)
+                            Size = open and UDim2.new(1, 0, 0, 78) or UDim2.new(1, 0, 0, 0)
                         })
                         Tween(wrap, 0.15, {
-                            Size = open and UDim2.new(1, 0, 0, 154) or UDim2.new(1, 0, 0, 34)
+                            Size = open and UDim2.new(1, 0, 0, 120) or UDim2.new(1, 0, 0, 34)
                         })
                     end)
 
-                    applyColor()
+                    updateColor()
 
                     if Section.ParentWindow and Section.ParentWindow.ColorPickers then
                         table.insert(Section.ParentWindow.ColorPickers, {
@@ -1615,7 +1598,6 @@ function Library:CreateWindow(title)
         local combatTab = self:AddTab("Combat")
         local visualsTab = self:AddTab("Visuals")
         local playerTab = self:AddTab("Player")
-        local settingsTab = self:AddTab("Settings")
 
         local dashboard = mainTab:AddSubTab("Dashboard")
         do
@@ -1655,12 +1637,6 @@ function Library:CreateWindow(title)
             right:AddSlider("Transparency", 0, 1, 0, function(v)
                 self.FOVVisual.Transparency = v
                 self:UpdateFOVCircle()
-            end)
-            right:AddToggle("Follow Accent", true, function(v)
-                if v then
-                    self.FOVVisual.Color = Theme.Accent
-                    self:UpdateFOVCircle()
-                end
             end)
         end
 
@@ -1745,21 +1721,22 @@ function Library:CreateWindow(title)
                     self.Blur.Size = v
                 end
             end)
-            left:AddToggle("Bottom Bars", true, function(v)
+            left:AddToggle("Show Bottom Tabs", true, function(v)
                 self.MainTabsHolder.Visible = v
-                self.SubTabHolder.Visible = v and (#(self.CurrentTab and self.CurrentTab.SubTabs or {}) > 0)
+                self.SubTabHolder.Visible = v and self.CurrentTab and (#self.CurrentTab.SubTabs > 0) or false
             end)
 
-            local right = uiVisual:AddSection("Accent Preview", "right")
-            right:AddColorPicker("Accent Color", Theme.Accent, function(c)
+            local right = uiVisual:AddSection("Theme", "right")
+            right:AddColorPicker("UI Accent", Theme.Accent, function(c)
                 self:SetAccent(c)
             end, true)
-            right:AddToggle("Sync Title Accent", true, function(v)
-                if v then
-                    self:SetAccent(Theme.Accent)
-                end
+            right:AddDropdown("Preset", {"Blue", "Green", "Red", "White", "Orange"}, "Blue", function(v)
+                if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
+                if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
+                if v == "Red" then self:SetAccent(Color3.fromRGB(255, 70, 70)) end
+                if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
+                if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
             end)
-            right:AddSlider("Accent Intensity", 0, 100, 100)
         end
 
         local movement = playerTab:AddSubTab("Movement")
@@ -1776,46 +1753,59 @@ function Library:CreateWindow(title)
             end)
         end
 
-        local configs = settingsTab:AddSubTab("Configs")
-        do
-            local left = configs:AddSection("Menu", "left")
-            left:AddKeybind("Hide Menu Key", Enum.KeyCode.Z, function(key)
-                self.HideKey = key
-                self:Notify("Hide key: " .. key.Name)
-            end)
-            left:AddToggle("Notifications", true)
-            left:AddButton("Unload UI", function()
-                if self.PreviewConn then
-                    self.PreviewConn:Disconnect()
-                end
-                if self.FOVCircle then
-                    self.FOVCircle.Visible = false
-                    self.FOVCircle:Remove()
-                    self.FOVCircle = nil
-                end
-                if self.Blur then
-                    self.Blur:Destroy()
-                end
-                self.GUI:Destroy()
-            end)
-
-            local right = configs:AddSection("Theme", "right")
-            right:AddColorPicker("Title Accent Color", Theme.Accent, function(c)
-                self:SetAccent(c)
-            end, true)
-            right:AddDropdown("Theme Preset", {"Blue", "Green", "Red", "White", "Orange"}, "Blue", function(v)
-                if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
-                if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
-                if v == "Red" then self:SetAccent(Color3.fromRGB(255, 70, 70)) end
-                if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
-                if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
-            end)
-        end
-
         mainTab:Show()
         self:ApplySearch("")
         self:SetAccent(Theme.Accent)
         self:UpdateFOVCircle()
+    end
+
+    self._CompatTab = nil
+    self._CompatSub = nil
+    self._CompatSection = nil
+
+    function self:GetCompatSection()
+        if self._CompatSection then
+            return self._CompatSection
+        end
+
+        self._CompatTab = self:AddTab("Main")
+        self._CompatSub = self._CompatTab:AddSubTab("Home")
+        self._CompatSection = self._CompatSub:AddSection("General", "left")
+        self._CompatTab:Show()
+
+        return self._CompatSection
+    end
+
+    function self:Button(text, callback)
+        return self:GetCompatSection():AddButton(text, callback)
+    end
+
+    function self:Toggle(text, default, callback)
+        if type(default) == "function" and callback == nil then
+            callback = default
+            default = false
+        end
+        return self:GetCompatSection():AddToggle(text, default or false, callback)
+    end
+
+    function self:Slider(text, min, max, default, callback)
+        return self:GetCompatSection():AddSlider(text, min, max, default, callback)
+    end
+
+    function self:Dropdown(text, items, default, callback)
+        return self:GetCompatSection():AddDropdown(text, items, default, callback)
+    end
+
+    function self:ColorPicker(text, defaultColor, callback, applyToAccent)
+        return self:GetCompatSection():AddColorPicker(text, defaultColor, callback, applyToAccent)
+    end
+
+    function self:Keybind(text, defaultKey, callback)
+        return self:GetCompatSection():AddKeybind(text, defaultKey, callback)
+    end
+
+    function self:Label(text, color)
+        return self:GetCompatSection():AddLabel(text, color)
     end
 
     RunService.RenderStepped:Connect(function()
