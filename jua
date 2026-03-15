@@ -1,5 +1,6 @@
+
 -- Valary-style safe UI library for Roblox Studio
--- Visual framework only. Safe visual tools for your own game objects.
+-- Visual framework only. No exploit or cheat logic.
 
 local Library = {}
 Library.__index = Library
@@ -9,7 +10,6 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
-local CollectionService = game:GetService("CollectionService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -34,9 +34,7 @@ local Theme = {
 
 local Icons = {
     Main = "⌂",
-    Combat = "✦",
     Visuals = "◉",
-    Player = "◎",
 }
 
 local function Create(class, props)
@@ -267,29 +265,6 @@ function Library:CreateWindow(title)
     self.BaseFOV = 70
     self.PreviewRotationSpeed = 16
 
-    self.FOVVisual = {
-        Enabled = true,
-        Radius = 120,
-        Thickness = 2,
-        Transparency = 0,
-        Color = Theme.Accent,
-    }
-
-    self.EntityESP = {
-        Enabled = false,
-        ShowName = true,
-        ShowDistance = false,
-        ShowHealthText = false,
-        ShowBox = false,
-        UseCornerBox = false,
-        NameSize = 13,
-        DistanceSize = 11,
-        HealthTextSize = 11,
-        MaxDistance = 2500,
-        Color = Theme.Accent,
-        Cache = {},
-    }
-
     local gui = Create("ScreenGui", {
         Name = "ValarySafeUI",
         Parent = LocalPlayer:WaitForChild("PlayerGui"),
@@ -305,18 +280,6 @@ function Library:CreateWindow(title)
     blur.Parent = Lighting
     Tween(blur, 0.18, {Size = 4})
     self.Blur = blur
-
-    local fovCircle = Drawing and Drawing.new and Drawing.new("Circle") or nil
-    if fovCircle then
-        fovCircle.Visible = false
-        fovCircle.Filled = false
-        fovCircle.NumSides = 80
-        fovCircle.Color = self.FOVVisual.Color
-        fovCircle.Radius = self.FOVVisual.Radius
-        fovCircle.Thickness = self.FOVVisual.Thickness
-        fovCircle.Transparency = 1 - self.FOVVisual.Transparency
-    end
-    self.FOVCircle = fovCircle
 
     local main = Create("Frame", {
         Parent = gui,
@@ -462,8 +425,8 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 340, 0, 42),
-        Position = UDim2.new(0.5, -170, 1, 28),
+        Size = UDim2.new(0, 220, 0, 42),
+        Position = UDim2.new(0.5, -110, 1, 28),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -548,26 +511,8 @@ function Library:CreateWindow(title)
         end
     end
 
-    function self:UpdateFOVCircle()
-        if not self.FOVCircle then
-            return
-        end
-
-        self.FOVCircle.Visible = self.FOVVisual.Enabled
-        self.FOVCircle.Radius = self.FOVVisual.Radius
-        self.FOVCircle.Thickness = self.FOVVisual.Thickness
-        self.FOVCircle.Color = self.FOVVisual.Color
-        self.FOVCircle.Transparency = math.clamp(1 - self.FOVVisual.Transparency, 0, 1)
-
-        local cam = workspace.CurrentCamera
-        if cam then
-            local vp = cam.ViewportSize
-            self.FOVCircle.Position = Vector2.new(vp.X / 2, vp.Y / 2)
-        end
-    end
-
     function self:RepositionBottomBars()
-        self.MainTabsHolder.Position = UDim2.new(0.5, -170, 1, 28)
+        self.MainTabsHolder.Position = UDim2.new(0.5, -110, 1, 28)
         self.SubTabHolder.Position = UDim2.new(0.5, -135, 1, -4)
     end
     self:RepositionBottomBars()
@@ -658,242 +603,10 @@ function Library:CreateWindow(title)
                 toggleData.Render()
             end
         end
-
-        self.FOVVisual.Color = color
-        self.EntityESP.Color = color
-        self:UpdateFOVCircle()
-    end
-
-    function self:GetEntityRoot(model)
-        if not model then
-            return nil
-        end
-        return model:FindFirstChild("HumanoidRootPart")
-            or model.PrimaryPart
-            or model:FindFirstChildWhichIsA("BasePart")
-    end
-
-    function self:GetEntityHead(model)
-        if not model then
-            return nil
-        end
-        return model:FindFirstChild("Head") or self:GetEntityRoot(model)
-    end
-
-    function self:GetEntityHumanoid(model)
-        if not model then
-            return nil
-        end
-        return model:FindFirstChildOfClass("Humanoid")
-    end
-
-    function self:GetLocalRoot()
-        local character = LocalPlayer.Character
-        if not character then
-            return nil
-        end
-        return self:GetEntityRoot(character)
-    end
-
-    function self:RemoveEntityESP(model)
-        local data = self.EntityESP.Cache[model]
-        if not data then
-            return
-        end
-
-        if data.Highlight then
-            data.Highlight:Destroy()
-        end
-        if data.Billboard then
-            data.Billboard:Destroy()
-        end
-        if data.Box then
-            data.Box:Destroy()
-        end
-
-        self.EntityESP.Cache[model] = nil
-    end
-
-    function self:EnsureEntityESP(model)
-        if not model or not model.Parent then
-            return nil
-        end
-
-        local root = self:GetEntityRoot(model)
-        local head = self:GetEntityHead(model)
-        local humanoid = self:GetEntityHumanoid(model)
-
-        if not root or not head or not humanoid then
-            self:RemoveEntityESP(model)
-            return nil
-        end
-
-        local data = self.EntityESP.Cache[model]
-        if not data then
-            data = {}
-            self.EntityESP.Cache[model] = data
-        end
-
-        if not data.Highlight or data.Highlight.Parent ~= model then
-            if data.Highlight then
-                data.Highlight:Destroy()
-            end
-
-            local highlight = Instance.new("Highlight")
-            highlight.Name = "ValaryEntityESP"
-            highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            highlight.FillTransparency = 0.78
-            highlight.OutlineTransparency = 0.08
-            highlight.Adornee = model
-            highlight.Parent = model
-            data.Highlight = highlight
-        end
-
-        if not data.Billboard or data.Billboard.Parent ~= head then
-            if data.Billboard then
-                data.Billboard:Destroy()
-            end
-
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "ValaryEntityESPBillboard"
-            billboard.AlwaysOnTop = true
-            billboard.LightInfluence = 0
-            billboard.ResetOnSpawn = false
-            billboard.Size = UDim2.new(0, 200, 0, 60)
-            billboard.StudsOffset = Vector3.new(0, 2.8, 0)
-            billboard.MaxDistance = self.EntityESP.MaxDistance
-            billboard.Parent = head
-
-            local holder = Instance.new("Frame")
-            holder.BackgroundTransparency = 1
-            holder.Size = UDim2.new(1, 0, 1, 0)
-            holder.Parent = billboard
-
-            local list = Instance.new("UIListLayout")
-            list.FillDirection = Enum.FillDirection.Vertical
-            list.HorizontalAlignment = Enum.HorizontalAlignment.Center
-            list.VerticalAlignment = Enum.VerticalAlignment.Center
-            list.Parent = holder
-
-            local nameLabel = Instance.new("TextLabel")
-            nameLabel.BackgroundTransparency = 1
-            nameLabel.Size = UDim2.new(1, 0, 0, 18)
-            nameLabel.Font = Enum.Font.GothamBold
-            nameLabel.TextStrokeTransparency = 0
-            nameLabel.TextColor3 = self.EntityESP.Color
-            nameLabel.Parent = holder
-
-            local distanceLabel = Instance.new("TextLabel")
-            distanceLabel.BackgroundTransparency = 1
-            distanceLabel.Size = UDim2.new(1, 0, 0, 16)
-            distanceLabel.Font = Enum.Font.GothamBold
-            distanceLabel.TextStrokeTransparency = 0
-            distanceLabel.TextColor3 = self.EntityESP.Color
-            distanceLabel.Parent = holder
-
-            local healthLabel = Instance.new("TextLabel")
-            healthLabel.BackgroundTransparency = 1
-            healthLabel.Size = UDim2.new(1, 0, 0, 16)
-            healthLabel.Font = Enum.Font.GothamBold
-            healthLabel.TextStrokeTransparency = 0
-            healthLabel.TextColor3 = self.EntityESP.Color
-            healthLabel.Parent = holder
-
-            data.Billboard = billboard
-            data.NameLabel = nameLabel
-            data.DistanceLabel = distanceLabel
-            data.HealthLabel = healthLabel
-        end
-
-        if not data.Box or data.Box.Parent ~= model then
-            if data.Box then
-                data.Box:Destroy()
-            end
-
-            local selection = Instance.new("SelectionBox")
-            selection.Name = "ValaryEntityBox"
-            selection.LineThickness = 0.03
-            selection.SurfaceTransparency = 1
-            selection.Color3 = self.EntityESP.Color
-            selection.Adornee = model
-            selection.Parent = model
-            data.Box = selection
-        end
-
-        return data
-    end
-
-    function self:UpdateEntityESP()
-        local localRoot = self:GetLocalRoot()
-        local tagged = CollectionService:GetTagged("DebugTarget")
-        local alive = {}
-
-        for _, model in ipairs(tagged) do
-            if model and model:IsA("Model") and model.Parent then
-                alive[model] = true
-                local data = self:EnsureEntityESP(model)
-
-                if data then
-                    local root = self:GetEntityRoot(model)
-                    local humanoid = self:GetEntityHumanoid(model)
-                    local dist = 0
-
-                    if localRoot and root then
-                        dist = math.floor((root.Position - localRoot.Position).Magnitude + 0.5)
-                    end
-
-                    local inRange = (not localRoot) or (dist <= self.EntityESP.MaxDistance)
-                    local showAnyText = self.EntityESP.ShowName or self.EntityESP.ShowDistance or self.EntityESP.ShowHealthText
-                    local active = self.EntityESP.Enabled and inRange
-
-                    data.Highlight.Enabled = active
-                    data.Highlight.FillColor = self.EntityESP.Color
-                    data.Highlight.OutlineColor = self.EntityESP.Color
-
-                    data.Billboard.Enabled = active and showAnyText
-                    data.Billboard.MaxDistance = self.EntityESP.MaxDistance
-
-                    data.NameLabel.Visible = self.EntityESP.ShowName
-                    data.NameLabel.Text = model.Name
-                    data.NameLabel.TextSize = self.EntityESP.NameSize
-                    data.NameLabel.TextColor3 = self.EntityESP.Color
-
-                    data.DistanceLabel.Visible = self.EntityESP.ShowDistance
-                    data.DistanceLabel.Text = tostring(dist) .. "m"
-                    data.DistanceLabel.TextSize = self.EntityESP.DistanceSize
-                    data.DistanceLabel.TextColor3 = self.EntityESP.Color
-
-                    data.HealthLabel.Visible = self.EntityESP.ShowHealthText and humanoid ~= nil
-                    data.HealthLabel.Text = humanoid and (math.floor(humanoid.Health + 0.5) .. " HP") or ""
-                    data.HealthLabel.TextSize = self.EntityESP.HealthTextSize
-                    data.HealthLabel.TextColor3 = self.EntityESP.Color
-
-                    data.Box.Visible = active and self.EntityESP.ShowBox
-                    data.Box.Color3 = self.EntityESP.Color
-                end
-            end
-        end
-
-        for model, _ in pairs(self.EntityESP.Cache) do
-            if not alive[model] or not model.Parent then
-                self:RemoveEntityESP(model)
-            end
-        end
     end
 
     close.MouseButton1Click:Connect(function()
         playClose()
-
-        if self.FOVCircle then
-            self.FOVCircle.Visible = false
-            self.FOVCircle:Remove()
-            self.FOVCircle = nil
-        end
-
-        for model, _ in pairs(self.EntityESP.Cache) do
-            self:RemoveEntityESP(model)
-        end
-
         Tween(blur, 0.15, {Size = 0})
         task.delay(0.18, function()
             if blur then
@@ -1848,9 +1561,7 @@ function Library:CreateWindow(title)
         self:Notify("UI loaded successfully")
 
         local mainTab = self:AddTab("Main")
-        local combatTab = self:AddTab("Combat")
         local visualsTab = self:AddTab("Visuals")
-        local playerTab = self:AddTab("Player")
 
         local dashboard = mainTab:AddSubTab("Dashboard")
         do
@@ -1864,33 +1575,6 @@ function Library:CreateWindow(title)
             right:AddToggle("Show Intro Effects", true)
             right:AddSlider("UI Animation Speed", 0.05, 1, 0.18)
             right:AddToggle("Menu Glow", true)
-        end
-
-        local selector = combatTab:AddSubTab("Selector")
-        do
-            local left = selector:AddSection("FOV Visual", "left")
-            left:AddToggle("Show FOV Circle", true, function(v)
-                self.FOVVisual.Enabled = v
-                self:UpdateFOVCircle()
-            end)
-            left:AddSlider("FOV Radius", 20, 400, 120, function(v)
-                self.FOVVisual.Radius = v
-                self:UpdateFOVCircle()
-            end)
-            left:AddSlider("Thickness", 1, 6, 2, function(v)
-                self.FOVVisual.Thickness = v
-                self:UpdateFOVCircle()
-            end)
-
-            local right = selector:AddSection("FOV Color", "right")
-            right:AddColorPicker("Circle Color", Theme.Accent, function(c)
-                self.FOVVisual.Color = c
-                self:UpdateFOVCircle()
-            end)
-            right:AddSlider("Transparency", 0, 1, 0, function(v)
-                self.FOVVisual.Transparency = v
-                self:UpdateFOVCircle()
-            end)
         end
 
         local world = visualsTab:AddSubTab("World")
@@ -1980,30 +1664,15 @@ function Library:CreateWindow(title)
             left:AddSlider("Preview Rotation Speed", 1, 40, 16, function(v)
                 self.PreviewRotationSpeed = v
             end)
-            left:AddColorPicker("Preview Accent", Theme.Accent, function(c)
-                self.EntityESP.Color = c
-            end)
+            left:AddColorPicker("Preview Accent", Theme.Accent)
 
             local right = players:AddSection("Labels", "right")
-            right:AddToggle("Name", true, function(v)
-                self.EntityESP.ShowName = v
-                self.EntityESP.Enabled = self.EntityESP.Enabled or v
-            end)
-            right:AddSlider("Name Size", 8, 24, 13, function(v)
-                self.EntityESP.NameSize = v
-            end)
-            right:AddToggle("Distance", false, function(v)
-                self.EntityESP.ShowDistance = v
-            end)
-            right:AddSlider("Distance Size", 8, 24, 11, function(v)
-                self.EntityESP.DistanceSize = v
-            end)
-            right:AddToggle("Health Text", false, function(v)
-                self.EntityESP.ShowHealthText = v
-            end)
-            right:AddSlider("Health Text Size", 8, 24, 11, function(v)
-                self.EntityESP.HealthTextSize = v
-            end)
+            right:AddToggle("Name", true)
+            right:AddSlider("Name Size", 8, 24, 13)
+            right:AddToggle("Distance", false)
+            right:AddSlider("Distance Size", 8, 24, 11)
+            right:AddToggle("Health Text", false)
+            right:AddSlider("Health Text Size", 8, 24, 11)
         end
 
         local uiVisual = visualsTab:AddSubTab("UI")
@@ -2037,30 +1706,10 @@ function Library:CreateWindow(title)
             end)
         end
 
-        local movement = playerTab:AddSubTab("Movement")
-        do
-            local left = movement:AddSection("Local Player", "left")
-            left:AddSlider("Walk Speed", 8, 40, 16)
-            left:AddSlider("Jump Power", 20, 120, 50)
-            left:AddToggle("Infinite Stamina", false)
-
-            local right = movement:AddSection("Character", "right")
-            right:AddToggle("Fly Visual Toggle", false)
-            right:AddButton("Refresh Character", function()
-                self:Notify("Character refreshed")
-            end)
-        end
-
         mainTab:Show()
         self:ApplySearch("")
         self:SetAccent(Theme.Accent)
-        self:UpdateFOVCircle()
     end
-
-    RunService.RenderStepped:Connect(function()
-        self:UpdateFOVCircle()
-        self:UpdateEntityESP()
-    end)
 
     self:BuildDemo()
     return self
