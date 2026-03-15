@@ -260,6 +260,7 @@ function Library:CreateWindow(title)
     self.ColorPickers = {}
     self.AccentObjects = {}
     self.LiveToggles = {}
+    self.LiveSliders = {}
     self.StretchEnabled = false
     self.StretchAmount = 0
     self.BaseFOV = 70
@@ -508,6 +509,8 @@ function Library:CreateWindow(title)
             obj.Color = Theme.Accent
         elseif mode == "text" then
             obj.TextColor3 = Theme.Accent
+        elseif mode == "image" then
+            obj.ImageColor3 = Theme.Accent
         end
     end
 
@@ -594,6 +597,8 @@ function Library:CreateWindow(title)
                     obj.Color = color
                 elseif mode == "text" then
                     obj.TextColor3 = color
+                elseif mode == "image" then
+                    obj.ImageColor3 = color
                 end
             end
         end
@@ -601,6 +606,12 @@ function Library:CreateWindow(title)
         for _, toggleData in ipairs(self.LiveToggles or {}) do
             if toggleData and toggleData.Render and toggleData.Switch and toggleData.Switch.Parent then
                 toggleData.Render()
+            end
+        end
+
+        for _, sliderData in ipairs(self.LiveSliders or {}) do
+            if sliderData and sliderData.Render and sliderData.Bar and sliderData.Bar.Parent then
+                sliderData.Render()
             end
         end
     end
@@ -1000,7 +1011,7 @@ function Library:CreateWindow(title)
                     local wrap = Create("Frame", {
                         Parent = holder,
                         BackgroundTransparency = 1,
-                        Size = UDim2.new(1, 0, 0, 44),
+                        Size = UDim2.new(1, 0, 0, 48),
                     })
 
                     Create("TextLabel", {
@@ -1030,11 +1041,11 @@ function Library:CreateWindow(title)
                         Parent = wrap,
                         BackgroundColor3 = Theme.Element,
                         BorderSizePixel = 0,
-                        Position = UDim2.new(0, 0, 0, 24),
+                        Position = UDim2.new(0, 0, 0, 26),
                         Size = UDim2.new(1, 0, 0, 10),
                     })
                     Corner(bar, 999)
-                    Stroke(bar, Theme.Border, 1)
+                    local barStroke = Stroke(bar, Theme.Border, 1)
 
                     local fill = Create("Frame", {
                         Parent = bar,
@@ -1043,7 +1054,21 @@ function Library:CreateWindow(title)
                         Size = UDim2.new(0, 0, 1, 0),
                     })
                     Corner(fill, 999)
-                    self.ParentWindow:RegisterAccentObject(fill, "bg")
+                    self:RegisterAccentObject(fill, "bg")
+
+                    local glow = Create("Frame", {
+                        Parent = bar,
+                        BackgroundColor3 = Theme.Accent,
+                        BorderSizePixel = 0,
+                        BackgroundTransparency = 0.68,
+                        Size = UDim2.new(0, 0, 1, 0),
+                        ZIndex = 0,
+                    })
+                    Corner(glow, 999)
+                    self:RegisterAccentObject(glow, "bg")
+
+                    local glowStroke = Stroke(glow, Theme.Accent, 1, 0.45)
+                    self:RegisterAccentObject(glowStroke, "stroke")
 
                     local knob = Create("Frame", {
                         Parent = bar,
@@ -1056,15 +1081,33 @@ function Library:CreateWindow(title)
                     })
                     Corner(knob, 999)
 
+                    local knobAccent = Create("Frame", {
+                        Parent = knob,
+                        AnchorPoint = Vector2.new(0.5, 0.5),
+                        Position = UDim2.new(0.5, 0, 0.5, 0),
+                        Size = UDim2.new(0, 6, 0, 6),
+                        BackgroundColor3 = Theme.Accent,
+                        BorderSizePixel = 0,
+                    })
+                    Corner(knobAccent, 999)
+                    self:RegisterAccentObject(knobAccent, "bg")
+
                     local dragging = false
                     local value = default or min
+                    local pctValue = 0
+
+                    local function renderSlider()
+                        fill.Size = UDim2.new(pctValue, 0, 1, 0)
+                        glow.Size = UDim2.new(pctValue, 0, 1, 0)
+                        knob.Position = UDim2.new(pctValue, 0, 0.5, 0)
+                    end
 
                     local function setValueFromPct(pct)
                         pct = math.clamp(pct, 0, 1)
+                        pctValue = pct
                         value = math.floor((min + (max - min) * pct) * 10 + 0.5) / 10
                         valueLabel.Text = tostring(value)
-                        fill.Size = UDim2.new(pct, 0, 1, 0)
-                        knob.Position = UDim2.new(pct, 0, 0.5, 0)
+                        renderSlider()
                         if callback then
                             callback(value)
                         end
@@ -1076,11 +1119,30 @@ function Library:CreateWindow(title)
                         setValueFromPct((value - min) / (max - min))
                     end
 
+                    table.insert(self.ParentWindow.LiveSliders, {
+                        Bar = bar,
+                        Render = renderSlider
+                    })
+
                     bar.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 then
                             dragging = true
+                            Tween(knob, 0.1, {Size = UDim2.new(0, 16, 0, 16)})
+                            Tween(glow, 0.1, {BackgroundTransparency = 0.5})
+                            Tween(barStroke, 0.1, {Color = Theme.Accent})
                             local pct = (input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X
                             setValueFromPct(pct)
+                        end
+                    end)
+
+                    bar.MouseEnter:Connect(function()
+                        Tween(glow, 0.12, {BackgroundTransparency = 0.58})
+                    end)
+
+                    bar.MouseLeave:Connect(function()
+                        if not dragging then
+                            Tween(glow, 0.12, {BackgroundTransparency = 0.68})
+                            Tween(barStroke, 0.12, {Color = Theme.Border})
                         end
                     end)
 
@@ -1093,6 +1155,11 @@ function Library:CreateWindow(title)
 
                     UIS.InputEnded:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                            if dragging then
+                                Tween(knob, 0.1, {Size = UDim2.new(0, 14, 0, 14)})
+                                Tween(glow, 0.1, {BackgroundTransparency = 0.68})
+                                Tween(barStroke, 0.1, {Color = Theme.Border})
+                            end
                             dragging = false
                         end
                     end)
@@ -1571,6 +1638,9 @@ function Library:CreateWindow(title)
             left:AddButton("Show Notification", function()
                 self:Notify("Everything is working")
             end)
+            left:AddButton("Theme Refresh", function()
+                self:SetAccent(Theme.Accent)
+            end)
 
             local right = dashboard:AddSection("Quick Options", "right")
             right:AddToggle("Show Intro Effects", true)
@@ -1579,6 +1649,19 @@ function Library:CreateWindow(title)
             right:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
                 self.HideKey = key
             end)
+        end
+
+        local profile = mainTab:AddSubTab("Profile")
+        do
+            local left = profile:AddSection("Player", "left")
+            left:AddLabel("Local profile options preview.")
+            left:AddSlider("Preview Scale", 0.5, 2, 1)
+            left:AddDropdown("Status", {"Default", "VIP", "Owner"}, "Default")
+
+            local right = profile:AddSection("Feedback", "right")
+            right:AddToggle("Menu Sounds", true)
+            right:AddSlider("Sound Volume", 0, 1, 0.4)
+            right:AddColorPicker("Accent Preview", Theme.Accent)
         end
 
         local aim = combatTab:AddSubTab("Aim")
@@ -1591,11 +1674,10 @@ function Library:CreateWindow(title)
             left:AddKeybind("Aim Key", Enum.KeyCode.Q)
 
             local right = aim:AddSection("Aim Visual", "right")
-            right:AddColorPicker("Aim Accent", Theme.Accent, function(c)
-                self:SetAccent(c)
-            end, false)
+            right:AddColorPicker("Aim Accent", Theme.Accent)
             right:AddToggle("Show Aim Panel", true)
             right:AddSlider("Opacity", 0, 1, 0.8)
+            right:AddSlider("Panel Width", 100, 400, 220)
         end
 
         local leftTab = combatTab:AddSubTab("Left")
@@ -1608,6 +1690,19 @@ function Library:CreateWindow(title)
             local right = leftTab:AddSection("Extra", "right")
             right:AddToggle("Notifications", true)
             right:AddSlider("Delay", 0, 5, 1)
+            right:AddSlider("Intensity", 0, 100, 50)
+        end
+
+        local miscCombat = combatTab:AddSubTab("Misc")
+        do
+            local left = miscCombat:AddSection("General", "left")
+            left:AddToggle("Safe Mode", true)
+            left:AddSlider("Reaction", 0, 10, 3)
+            left:AddDropdown("Priority", {"Close", "Center", "Balanced"}, "Balanced")
+
+            local right = miscCombat:AddSection("Style", "right")
+            right:AddColorPicker("Combat Color", Theme.Accent)
+            right:AddSlider("Outline Alpha", 0, 1, 0.5)
         end
 
         local world = visualsTab:AddSubTab("World")
@@ -1619,7 +1714,6 @@ function Library:CreateWindow(title)
             left:AddSlider("Clock Time", 0, 24, 14)
 
             local right = world:AddSection("Camera", "right")
-
             right:AddSlider("Field Of View", 40, 120, 70, function(v)
                 self.BaseFOV = v
                 local cam = workspace.CurrentCamera
@@ -1698,6 +1792,8 @@ function Library:CreateWindow(title)
                 self.PreviewRotationSpeed = v
             end)
             left:AddColorPicker("Preview Accent", Theme.Accent)
+            left:AddSlider("Name Size Mockup", 8, 24, 13)
+            left:AddSlider("Health Size Mockup", 4, 20, 10)
 
             local right = players:AddSection("ESP Layout Mockup", "right")
             right:AddLabel("Only switches and layout preview. No ESP logic.")
@@ -1728,6 +1824,7 @@ function Library:CreateWindow(title)
                 self.MainTabsHolder.Visible = v
                 self.SubTabHolder.Visible = v and self.CurrentTab and (#self.CurrentTab.SubTabs > 0) or false
             end)
+            left:AddSlider("Roundness Preview", 4, 18, 8)
 
             local right = uiVisual:AddSection("Theme", "right")
             right:AddColorPicker("UI Accent", Theme.Accent, function(c)
@@ -1740,6 +1837,7 @@ function Library:CreateWindow(title)
                 if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
                 if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
             end)
+            right:AddSlider("Accent Strength", 0, 1, 1)
         end
 
         mainTab:Show()
