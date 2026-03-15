@@ -561,7 +561,6 @@ function Library:CreateWindow(title)
 
             for _, sub in ipairs(tab.SubTabs) do
                 local activeSub = activeTab and (tab.CurrentSub == sub)
-
                 sub.Page.Visible = activeSub
 
                 for _, section in ipairs(sub.Sections) do
@@ -575,17 +574,26 @@ function Library:CreateWindow(title)
                         end
                     end
 
-                    section.Root.Visible = activeSub and (sectionVisibleCount > 0 or query == "")
+                    if query == "" then
+                        section.Root.Visible = activeSub
+                    else
+                        section.Root.Visible = activeSub and sectionVisibleCount > 0
+                    end
                 end
             end
         end
     end
+
+    searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+        self:ApplySearch(searchBox.Text)
+    end)
 
     function self:AddTab(name)
         local Tab = {
             Name = name,
             SubTabs = {},
             CurrentSub = nil,
+            ParentWindow = self,
         }
 
         local tabButton = Create("TextButton", {
@@ -610,6 +618,8 @@ function Library:CreateWindow(title)
                 Sections = {},
                 Page = nil,
                 Button = nil,
+                ParentWindow = Tab.ParentWindow,
+                ParentTab = Tab,
             }
 
             local page = Create("Frame", {
@@ -700,15 +710,21 @@ function Library:CreateWindow(title)
                 end
 
                 Tab.CurrentSub = self
-                self.ParentWindow:ApplySearch(searchBox.Text)
+
+                if self.ParentWindow and self.ParentWindow.ApplySearch then
+                    self.ParentWindow:ApplySearch(searchBox.Text)
+                end
             end
 
             function Sub:AddSection(sectionName, side)
                 local container = (side == "right") and self.Right or self.Left
-                local Section = {Items = {}, Root = nil}
-                Section.ParentWindow = self.ParentWindow
-                Section.ParentSub = self
-                Section.ParentTab = Tab
+                local Section = {
+                    Items = {},
+                    Root = nil,
+                    ParentWindow = self.ParentWindow,
+                    ParentSub = self,
+                    ParentTab = Tab,
+                }
 
                 local root = Create("Frame", {
                     Parent = container,
@@ -1214,7 +1230,7 @@ function Library:CreateWindow(title)
                             callback(c)
                         end
 
-                        if applyToAccent and Section.ParentWindow then
+                        if applyToAccent and Section.ParentWindow and Section.ParentWindow.SetAccent then
                             Section.ParentWindow:SetAccent(c)
                         end
                     end
@@ -1279,7 +1295,7 @@ function Library:CreateWindow(title)
 
                     updateColor()
 
-                    if Section.ParentWindow then
+                    if Section.ParentWindow and Section.ParentWindow.ColorPickers then
                         table.insert(Section.ParentWindow.ColorPickers, {
                             Preview = preview,
                             ApplyToAccent = applyToAccent,
@@ -1297,8 +1313,6 @@ function Library:CreateWindow(title)
                 table.insert(self.Sections, Section)
                 return Section
             end
-
-            Sub.ParentWindow = self
 
             subButton.MouseButton1Click:Connect(function()
                 playPop()
@@ -1357,7 +1371,6 @@ function Library:CreateWindow(title)
             Tab:Show()
         end)
 
-        Tab.ParentWindow = self
         table.insert(self.Tabs, Tab)
         return Tab
     end
