@@ -32,10 +32,9 @@ local Theme = {
 }
 
 local Icons = {
-    Main = "⌂",
     Combat = "✦",
     Visuals = "◉",
-    Player = "◎",
+    Settings = "◎",
 }
 
 local function Create(class, props)
@@ -446,8 +445,8 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 340, 0, 42),
-        Position = UDim2.new(0.5, -170, 1, 28),
+        Size = UDim2.new(0, 280, 0, 42),
+        Position = UDim2.new(0.5, -140, 1, 28),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -472,14 +471,14 @@ function Library:CreateWindow(title)
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         VerticalAlignment = Enum.VerticalAlignment.Center,
-        Padding = UDim.new(0, 6),
+        Padding = UDim.new(0, 8),
     })
 
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 270, 0, 40),
-        Position = UDim2.new(0.5, -135, 1, -4),
+        Size = UDim2.new(0, 320, 0, 40),
+        Position = UDim2.new(0.5, -160, 1, -4),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
@@ -549,12 +548,6 @@ function Library:CreateWindow(title)
             self.FOVCircle.Position = Vector2.new(vp.X / 2, vp.Y / 2)
         end
     end
-
-    function self:RepositionBottomBars()
-        self.MainTabsHolder.Position = UDim2.new(0.5, -170, 1, 28)
-        self.SubTabHolder.Position = UDim2.new(0.5, -135, 1, -4)
-    end
-    self:RepositionBottomBars()
 
     function self:Notify(text)
         local card = Create("Frame", {
@@ -662,6 +655,12 @@ function Library:CreateWindow(title)
                 blur:Destroy()
             end
         end)
+
+        if self.PreviewConn then
+            self.PreviewConn:Disconnect()
+            self.PreviewConn = nil
+        end
+
         gui:Destroy()
     end)
 
@@ -740,7 +739,7 @@ function Library:CreateWindow(title)
             Parent = mainTabsScroll,
             BackgroundColor3 = Theme.Panel,
             AutoButtonColor = false,
-            Size = UDim2.new(0, 56, 1, 0),
+            Size = UDim2.new(0, 72, 1, 0),
             Font = Enum.Font.GothamBold,
             Text = Icons[name] or string.sub(name, 1, 1),
             TextColor3 = Theme.SubText,
@@ -1609,28 +1608,15 @@ function Library:CreateWindow(title)
         playPop()
         self:Notify("UI loaded successfully")
 
-        local mainTab = self:AddTab("Main")
+        -- 3 tabs only
         local combatTab = self:AddTab("Combat")
         local visualsTab = self:AddTab("Visuals")
-        local playerTab = self:AddTab("Player")
+        local settingsTab = self:AddTab("Settings")
 
-        local dashboard = mainTab:AddSubTab("Dashboard")
+        -- COMBAT
+        local combatMain = combatTab:AddSubTab("Main")
         do
-            local left = dashboard:AddSection("Welcome", "left")
-            left:AddLabel("Valary-style safe menu for your Roblox Studio game.")
-            left:AddButton("Show Notification", function()
-                self:Notify("Everything is working")
-            end)
-
-            local right = dashboard:AddSection("Quick Options", "right")
-            right:AddToggle("Show Intro Effects", true)
-            right:AddSlider("UI Animation Speed", 0.05, 1, 0.18)
-            right:AddToggle("Menu Glow", true)
-        end
-
-        local selector = combatTab:AddSubTab("Selector")
-        do
-            local left = selector:AddSection("FOV Visual", "left")
+            local left = combatMain:AddSection("Combat Visuals", "left")
             left:AddToggle("Show FOV Circle", true, function(v)
                 self.FOVVisual.Enabled = v
                 self:UpdateFOVCircle()
@@ -1639,22 +1625,47 @@ function Library:CreateWindow(title)
                 self.FOVVisual.Radius = v
                 self:UpdateFOVCircle()
             end)
-            left:AddSlider("Thickness", 1, 6, 2, function(v)
+            left:AddSlider("FOV Thickness", 1, 6, 2, function(v)
                 self.FOVVisual.Thickness = v
                 self:UpdateFOVCircle()
             end)
-
-            local right = selector:AddSection("FOV Color", "right")
-            right:AddColorPicker("Circle Color", Theme.Accent, function(c)
-                self.FOVVisual.Color = c
-                self:UpdateFOVCircle()
-            end)
-            right:AddSlider("Transparency", 0, 1, 0, function(v)
+            left:AddSlider("FOV Transparency", 0, 1, 0, function(v)
                 self.FOVVisual.Transparency = v
                 self:UpdateFOVCircle()
             end)
+            left:AddColorPicker("FOV Color", Theme.Accent, function(c)
+                self.FOVVisual.Color = c
+                self:UpdateFOVCircle()
+            end)
+
+            local right = combatMain:AddSection("Combat Config", "right")
+            right:AddDropdown("Target Part", {"Head", "UpperTorso", "HumanoidRootPart"}, "Head")
+            right:AddDropdown("Priority", {"Closest", "Distance", "Cursor"}, "Closest")
+            right:AddToggle("Team Check", true)
+            right:AddToggle("Visibility Check", false)
+            right:AddToggle("Prediction Preview", false)
+            right:AddSlider("Prediction Strength", 0, 1, 0.15)
+            right:AddKeybind("Combat Menu Key", Enum.KeyCode.Z, function(key)
+                self.HideKey = key
+            end)
         end
 
+        local combatExtra = combatTab:AddSubTab("Extra")
+        do
+            local left = combatExtra:AddSection("Indicators", "left")
+            left:AddToggle("Crosshair Overlay", false)
+            left:AddToggle("Hit Marker UI", false)
+            left:AddToggle("Target Info Panel", false)
+            left:AddSlider("Indicator Scale", 0.5, 2, 1)
+
+            local right = combatExtra:AddSection("Assist Settings", "right")
+            right:AddToggle("Smooth Camera Preview", false)
+            right:AddSlider("Smoothness", 0, 1, 0.2)
+            right:AddToggle("Deadzone Preview", false)
+            right:AddSlider("Deadzone Radius", 0, 100, 20)
+        end
+
+        -- VISUALS
         local world = visualsTab:AddSubTab("World")
         do
             local left = world:AddSection("World Settings", "left")
@@ -1662,42 +1673,7 @@ function Library:CreateWindow(title)
             left:AddColorPicker("Ambient Color", Theme.Accent)
             left:AddSlider("Brightness", 0, 10, 2)
             left:AddSlider("Clock Time", 0, 24, 14)
-
-            local right = world:AddSection("Camera", "right")
-
-            right:AddSlider("Field Of View", 40, 120, 70, function(v)
-                self.BaseFOV = v
-                local cam = workspace.CurrentCamera
-                if cam then
-                    if self.StretchEnabled then
-                        cam.FieldOfView = v + (self.StretchAmount * 0.35)
-                    else
-                        cam.FieldOfView = v
-                    end
-                end
-            end)
-
-            right:AddToggle("Enabled Resolution", false, function(v)
-                self.StretchEnabled = v
-                local cam = workspace.CurrentCamera
-                if cam then
-                    if v then
-                        cam.FieldOfView = self.BaseFOV + (self.StretchAmount * 0.35)
-                    else
-                        cam.FieldOfView = self.BaseFOV
-                    end
-                end
-            end)
-
-            right:AddSlider("Stretch Amount", 0, 40, 0, function(v)
-                self.StretchAmount = v
-                local cam = workspace.CurrentCamera
-                if cam and self.StretchEnabled then
-                    cam.FieldOfView = self.BaseFOV + (v * 0.35)
-                end
-            end)
-
-            right:AddToggle("Fullbright", false, function(v)
+            left:AddToggle("Fullbright", false, function(v)
                 if v then
                     Lighting.Brightness = 3
                     Lighting.GlobalShadows = false
@@ -1706,8 +1682,7 @@ function Library:CreateWindow(title)
                     Lighting.GlobalShadows = true
                 end
             end)
-
-            right:AddToggle("Depth Blur", false, function(v)
+            left:AddToggle("Depth Blur", false, function(v)
                 local eff = Lighting:FindFirstChild("ValaryDepthBlur")
                 if v then
                     if not eff then
@@ -1722,35 +1697,37 @@ function Library:CreateWindow(title)
                     end
                 end
             end)
-        end
 
-        local players = visualsTab:AddSubTab("Players")
-        do
-            local left = players:AddSection("Preview", "left")
-            left:AddToggle("Show Character Preview", false, function(v)
-                if v then
-                    self:CreatePreviewPanel()
-                    if self.PreviewPanel then
-                        self.PreviewPanel.Visible = true
-                    end
-                else
-                    if self.PreviewPanel then
-                        self.PreviewPanel.Visible = false
+            local right = world:AddSection("Camera", "right")
+            right:AddSlider("Field Of View", 40, 120, 70, function(v)
+                self.BaseFOV = v
+                local cam = workspace.CurrentCamera
+                if cam then
+                    if self.StretchEnabled then
+                        cam.FieldOfView = v + (self.StretchAmount * 0.35)
+                    else
+                        cam.FieldOfView = v
                     end
                 end
             end)
-            left:AddSlider("Preview Rotation Speed", 1, 40, 16, function(v)
-                self.PreviewRotationSpeed = v
+            right:AddToggle("Enabled Resolution", false, function(v)
+                self.StretchEnabled = v
+                local cam = workspace.CurrentCamera
+                if cam then
+                    if v then
+                        cam.FieldOfView = self.BaseFOV + (self.StretchAmount * 0.35)
+                    else
+                        cam.FieldOfView = self.BaseFOV
+                    end
+                end
             end)
-            left:AddColorPicker("Preview Accent", Theme.Accent)
-
-            local right = players:AddSection("Labels", "right")
-            right:AddToggle("Name", true)
-            right:AddSlider("Name Size", 8, 24, 13)
-            right:AddToggle("Distance", false)
-            right:AddSlider("Distance Size", 8, 24, 11)
-            right:AddToggle("Health Text", false)
-            right:AddSlider("Health Text Size", 8, 24, 11)
+            right:AddSlider("Stretch Amount", 0, 40, 0, function(v)
+                self.StretchAmount = v
+                local cam = workspace.CurrentCamera
+                if cam and self.StretchEnabled then
+                    cam.FieldOfView = self.BaseFOV + (v * 0.35)
+                end
+            end)
         end
 
         local uiVisual = visualsTab:AddSubTab("UI")
@@ -1770,6 +1747,8 @@ function Library:CreateWindow(title)
                 self.MainTabsHolder.Visible = v
                 self.SubTabHolder.Visible = v and self.CurrentTab and (#self.CurrentTab.SubTabs > 0) or false
             end)
+            left:AddToggle("Menu Sounds", true)
+            left:AddToggle("Smooth Open", true)
 
             local right = uiVisual:AddSection("Theme", "right")
             right:AddColorPicker("UI Accent", Theme.Accent, function(c)
@@ -1782,23 +1761,114 @@ function Library:CreateWindow(title)
                 if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
                 if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
             end)
+            right:AddSlider("UI Scale Preview", 0.8, 1.3, 1)
+            right:AddToggle("Rounded Theme", true)
         end
 
-        local movement = playerTab:AddSubTab("Movement")
+        local players = visualsTab:AddSubTab("Players")
         do
-            local left = movement:AddSection("Local Player", "left")
-            left:AddSlider("Walk Speed", 8, 40, 16)
-            left:AddSlider("Jump Power", 20, 120, 50)
-            left:AddToggle("Infinite Stamina", false)
+            local left = players:AddSection("ESP Visuals", "left")
+            left:AddToggle("Enable Player ESP", false)
+            left:AddDropdown("Box Type", {"Full Box", "Corner Box"}, "Corner Box")
+            left:AddToggle("Box Outline", true)
+            left:AddSlider("Box Thickness", 1, 5, 2)
+            left:AddColorPicker("Box Color", Theme.Accent)
+            left:AddToggle("Filled Box", false)
+            left:AddSlider("Fill Transparency", 0, 1, 0.2)
+            left:AddToggle("Health Bar", true)
+            left:AddDropdown("Health Style", {"Left", "Right", "Bottom"}, "Left")
+            left:AddToggle("Health Text", false)
+            left:AddToggle("Name", true)
+            left:AddSlider("Name Size", 8, 24, 13)
+            left:AddToggle("Distance", false)
+            left:AddSlider("Distance Size", 8, 24, 11)
+            left:AddToggle("Weapon Text", false)
+            left:AddSlider("Weapon Size", 8, 24, 11)
 
-            local right = movement:AddSection("Character", "right")
-            right:AddToggle("Fly Visual Toggle", false)
-            right:AddButton("Refresh Character", function()
-                self:Notify("Character refreshed")
+            local mid = players:AddSection("Skeleton / Tracers", "right")
+            mid:AddToggle("Skeleton", false)
+            mid:AddDropdown("Skeleton Type", {"Basic", "Pro"}, "Basic")
+            mid:AddSlider("Skeleton Thickness", 1, 4, 1)
+            mid:AddColorPicker("Skeleton Color", Theme.White)
+            mid:AddToggle("Tracer", false)
+            mid:AddDropdown("Tracer Origin", {"Top", "Middle", "Bottom"}, "Bottom")
+            mid:AddSlider("Tracer Thickness", 1, 4, 1)
+            mid:AddColorPicker("Tracer Color", Theme.Accent)
+            mid:AddToggle("Head Dot", false)
+            mid:AddSlider("Head Dot Size", 2, 10, 4)
+            mid:AddToggle("View Direction", false)
+            mid:AddSlider("View Direction Length", 5, 40, 15)
+
+            local extra = players:AddSection("Preview / Extra", "left")
+            extra:AddToggle("Show Character Preview", false, function(v)
+                if v then
+                    self:CreatePreviewPanel()
+                    if self.PreviewPanel then
+                        self.PreviewPanel.Visible = true
+                    end
+                else
+                    if self.PreviewPanel then
+                        self.PreviewPanel.Visible = false
+                    end
+                end
+            end)
+            extra:AddSlider("Preview Rotation Speed", 1, 40, 16, function(v)
+                self.PreviewRotationSpeed = v
+            end)
+            extra:AddColorPicker("Preview Accent", Theme.Accent)
+            extra:AddToggle("Show Team Color", false)
+            extra:AddToggle("Show Friend Marker", false)
+            extra:AddToggle("Show Visibility State", false)
+        end
+
+        -- SETTINGS
+        local settingsMain = settingsTab:AddSubTab("Main")
+        do
+            local left = settingsMain:AddSection("Menu", "left")
+            left:AddLabel("This tab keeps your menu settings/config area.")
+            left:AddButton("Show Notification", function()
+                self:Notify("Settings tab working")
+            end)
+            left:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
+                self.HideKey = key
+            end)
+            left:AddToggle("Notifications", true)
+            left:AddToggle("Save Config Preview", false)
+
+            local right = settingsMain:AddSection("Config", "right")
+            right:AddDropdown("Config Slot", {"Default", "Legit", "Rage", "Visual"}, "Default")
+            right:AddButton("Load Config", function()
+                self:Notify("Load clicked")
+            end)
+            right:AddButton("Save Config", function()
+                self:Notify("Save clicked")
+            end)
+            right:AddButton("Reset Config", function()
+                self:Notify("Reset clicked")
             end)
         end
 
-        mainTab:Show()
+        local settingsTheme = settingsTab:AddSubTab("Theme")
+        do
+            local left = settingsTheme:AddSection("Theme Color", "left")
+            left:AddColorPicker("Accent", Theme.Accent, function(c)
+                self:SetAccent(c)
+            end, true)
+            left:AddDropdown("Preset", {"Blue", "Green", "Red", "White", "Orange"}, "Blue", function(v)
+                if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
+                if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
+                if v == "Red" then self:SetAccent(Color3.fromRGB(255, 70, 70)) end
+                if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
+                if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
+            end)
+
+            local right = settingsTheme:AddSection("Misc", "right")
+            right:AddToggle("Intro Sound", true)
+            right:AddToggle("Button Sound", true)
+            right:AddSlider("Animation Speed", 0.05, 1, 0.18)
+        end
+
+        combatTab:Show()
         self:ApplySearch("")
         self:SetAccent(Theme.Accent)
         self:UpdateFOVCircle()
