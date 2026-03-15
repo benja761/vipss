@@ -1,3 +1,4 @@
+
 -- Valary-style safe UI library for Roblox Studio
 -- Visual framework only. No exploit or cheat logic.
 
@@ -167,7 +168,7 @@ local function cloneCharacter(viewport)
     local clone = char:Clone()
 
     for _, v in ipairs(clone:GetDescendants()) do
-        if v:IsA("BaseScript") then
+        if v:IsA("BaseScript") or v:IsA("LocalScript") or v:IsA("ModuleScript") then
             v:Destroy()
         elseif v:IsA("Humanoid") then
             v.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -384,7 +385,7 @@ function Library:CreateWindow(title)
         ScrollingDirection = Enum.ScrollingDirection.X,
     })
 
-    local mainTabsLayout = Create("UIListLayout", {
+    Create("UIListLayout", {
         Parent = mainTabsScroll,
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -418,7 +419,7 @@ function Library:CreateWindow(title)
         ScrollingDirection = Enum.ScrollingDirection.X,
     })
 
-    local subTabsLayout = Create("UIListLayout", {
+    Create("UIListLayout", {
         Parent = subTabsScroll,
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -480,7 +481,9 @@ function Library:CreateWindow(title)
             if card and card.Parent then
                 Tween(card, 0.18, {BackgroundTransparency = 1, Position = UDim2.new(0, 50, 1, -56)})
                 task.wait(0.22)
-                if card then card:Destroy() end
+                if card then
+                    card:Destroy()
+                end
             end
         end)
     end
@@ -500,7 +503,9 @@ function Library:CreateWindow(title)
     close.MouseButton1Click:Connect(function()
         Tween(blur, 0.15, {Size = 0})
         task.delay(0.18, function()
-            if blur then blur:Destroy() end
+            if blur then
+                blur:Destroy()
+            end
         end)
         gui:Destroy()
     end)
@@ -515,7 +520,9 @@ function Library:CreateWindow(title)
     end)
 
     UIS.InputBegan:Connect(function(input, gp)
-        if gp then return end
+        if gp then
+            return
+        end
         if input.KeyCode == self.HideKey then
             self.MenuVisible = not self.MenuVisible
             main.Visible = self.MenuVisible
@@ -528,7 +535,6 @@ function Library:CreateWindow(title)
             local active = (self.CurrentTab == tab)
             for _, sub in ipairs(tab.SubTabs) do
                 local isSubActive = active and (tab.CurrentSub == sub)
-                local visibleCount = 0
 
                 for _, section in ipairs(sub.Sections) do
                     local sectionVisible = 0
@@ -540,9 +546,6 @@ function Library:CreateWindow(title)
                         end
                     end
                     section.Root.Visible = sectionVisible > 0 and isSubActive
-                    if section.Root.Visible then
-                        visibleCount += 1
-                    end
                 end
 
                 sub.Page.Visible = isSubActive
@@ -553,17 +556,6 @@ function Library:CreateWindow(title)
     searchBox:GetPropertyChangedSignal("Text"):Connect(function()
         self:ApplySearch(searchBox.Text)
     end)
-
-    function self:HideAllSubButtons()
-        for _, t in ipairs(self.Tabs) do
-            for _, s in ipairs(t.SubTabs) do
-                if s.Button then
-                    s.Button.Visible = false
-                    s.Button.Parent = subTabsScroll
-                end
-            end
-        end
-    end
 
     function self:AddTab(name)
         local Tab = {
@@ -616,6 +608,7 @@ function Library:CreateWindow(title)
                 ScrollBarThickness = 3,
                 ScrollingDirection = Enum.ScrollingDirection.Y,
             })
+
             local right = Create("ScrollingFrame", {
                 Parent = page,
                 BackgroundTransparency = 1,
@@ -627,8 +620,19 @@ function Library:CreateWindow(title)
                 ScrollBarThickness = 3,
                 ScrollingDirection = Enum.ScrollingDirection.Y,
             })
-            Create("UIListLayout", {Parent = left, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder})
-            Create("UIListLayout", {Parent = right, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder})
+
+            Create("UIListLayout", {
+                Parent = left,
+                Padding = UDim.new(0, 10),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
+            Create("UIListLayout", {
+                Parent = right,
+                Padding = UDim.new(0, 10),
+                SortOrder = Enum.SortOrder.LayoutOrder
+            })
+
             Sub.Left = left
             Sub.Right = right
 
@@ -655,7 +659,9 @@ function Library:CreateWindow(title)
                     if s.Button then
                         Tween(s.Button, 0.12, {BackgroundColor3 = Theme.Panel})
                         local stroke = s.Button:FindFirstChildOfClass("UIStroke")
-                        if stroke then Tween(stroke, 0.12, {Color = Theme.Border}) end
+                        if stroke then
+                            Tween(stroke, 0.12, {Color = Theme.Border})
+                        end
                     end
                 end
 
@@ -665,7 +671,9 @@ function Library:CreateWindow(title)
 
                 Tween(self.Button, 0.12, {BackgroundColor3 = Theme.Element})
                 local activeStroke = self.Button:FindFirstChildOfClass("UIStroke")
-                if activeStroke then Tween(activeStroke, 0.12, {Color = Theme.Accent}) end
+                if activeStroke then
+                    Tween(activeStroke, 0.12, {Color = Theme.Accent})
+                end
 
                 Tab.CurrentSub = self
                 self.ParentWindow:ApplySearch(searchBox.Text)
@@ -712,6 +720,7 @@ function Library:CreateWindow(title)
                     Size = UDim2.new(1, -20, 0, 60),
                     AutomaticSize = Enum.AutomaticSize.Y,
                 })
+
                 local list = Create("UIListLayout", {
                     Parent = holder,
                     Padding = UDim.new(0, 8),
@@ -763,7 +772,9 @@ function Library:CreateWindow(title)
                     local st = Stroke(btn, Theme.Border, 1)
                     setHover(btn, Theme.Element, Theme.ElementHover, st)
                     btn.MouseButton1Click:Connect(function()
-                        if callback then task.spawn(callback) end
+                        if callback then
+                            task.spawn(callback)
+                        end
                     end)
                     register(btn, text)
                     return btn
@@ -812,19 +823,25 @@ function Library:CreateWindow(title)
                     local function render()
                         Tween(swStroke, 0.12, {Color = state and Theme.Accent or Theme.Border})
                         Tween(switch, 0.12, {BackgroundColor3 = state and Theme.AccentDark or Theme.Element})
-                        Tween(knob, 0.12, {Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)})
+                        Tween(knob, 0.12, {
+                            Position = state and UDim2.new(1, -19, 0.5, -8) or UDim2.new(0, 3, 0.5, -8)
+                        })
                     end
                     render()
 
                     switch.MouseButton1Click:Connect(function()
                         state = not state
                         render()
-                        if callback then callback(state) end
+                        if callback then
+                            callback(state)
+                        end
                     end)
 
                     register(wrap, text)
                     return {
-                        Get = function() return state end,
+                        Get = function()
+                            return state
+                        end,
                         Set = function(_, v)
                             state = v and true or false
                             render()
@@ -900,10 +917,16 @@ function Library:CreateWindow(title)
                         valueLabel.Text = tostring(value)
                         fill.Size = UDim2.new(pct, 0, 1, 0)
                         knob.Position = UDim2.new(pct, 0, 0.5, 0)
-                        if callback then callback(value) end
+                        if callback then
+                            callback(value)
+                        end
                     end
 
-                    setValueFromPct((value - min) / (max - min))
+                    if max == min then
+                        setValueFromPct(0)
+                    else
+                        setValueFromPct((value - min) / (max - min))
+                    end
 
                     bar.InputBegan:Connect(function(input)
                         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -927,7 +950,11 @@ function Library:CreateWindow(title)
                     end)
 
                     register(wrap, text)
-                    return {Get = function() return value end}
+                    return {
+                        Get = function()
+                            return value
+                        end
+                    }
                 end
 
                 function Section:AddDropdown(text, items, default, callback)
@@ -967,6 +994,7 @@ function Library:CreateWindow(title)
 
                     local current = default
                     local open = false
+
                     for _, option in ipairs(items or {}) do
                         local opt = Create("TextButton", {
                             Parent = listHolder,
@@ -982,13 +1010,16 @@ function Library:CreateWindow(title)
                         Corner(opt, 6)
                         local os = Stroke(opt, Theme.Border, 1)
                         setHover(opt, Theme.Element, Theme.ElementHover, os)
+
                         opt.MouseButton1Click:Connect(function()
                             current = option
                             button.Text = "  " .. tostring(option)
                             open = false
                             Tween(listHolder, 0.15, {Size = UDim2.new(1, 0, 0, 0)})
                             Tween(wrap, 0.15, {Size = UDim2.new(1, 0, 0, 34)})
-                            if callback then callback(option) end
+                            if callback then
+                                callback(option)
+                            end
                         end)
                     end
 
@@ -1000,30 +1031,41 @@ function Library:CreateWindow(title)
                     end)
 
                     register(wrap, text)
-                    return {Get = function() return current end}
+                    return {
+                        Get = function()
+                            return current
+                        end
+                    }
                 end
 
                 function Section:AddKeybind(text, defaultKey, callback)
                     local currentKey = defaultKey or Enum.KeyCode.Z
                     local waiting = false
+                    local btn
 
-                    local btn = Section:AddButton(text .. ": " .. currentKey.Name, function()
+                    btn = Section:AddButton(text .. ": " .. currentKey.Name, function()
                         waiting = true
                         btn.Text = text .. ": ..."
                     end)
 
                     UIS.InputBegan:Connect(function(input, gp)
-                        if gp or not waiting then return end
+                        if gp or not waiting then
+                            return
+                        end
                         if input.UserInputType == Enum.UserInputType.Keyboard then
                             waiting = false
                             currentKey = input.KeyCode
                             btn.Text = text .. ": " .. currentKey.Name
-                            if callback then callback(currentKey) end
+                            if callback then
+                                callback(currentKey)
+                            end
                         end
                     end)
 
                     return {
-                        Get = function() return currentKey end,
+                        Get = function()
+                            return currentKey
+                        end,
                     }
                 end
 
@@ -1080,13 +1122,13 @@ function Library:CreateWindow(title)
                     })
                     Corner(panel, 8)
                     Stroke(panel, Theme.Border, 1)
-                    local pad = Padding(panel, 10, 10, 10, 10)
-                    pad.Parent = panel
+                    Padding(panel, 10, 10, 10, 10)
 
                     local hueSlider = Create("Frame", {
                         Parent = panel,
                         BackgroundColor3 = Theme.Element,
                         BorderSizePixel = 0,
+                        Position = UDim2.new(0, 0, 0, 0),
                         Size = UDim2.new(1, 0, 0, 12),
                     })
                     Corner(hueSlider, 999)
@@ -1131,14 +1173,17 @@ function Library:CreateWindow(title)
                     local function updateColor()
                         local c = Color3.fromHSV(h, s, v)
                         preview.BackgroundColor3 = c
-                        if callback then callback(c) end
+                        if callback then
+                            callback(c)
+                        end
                         if applyToAccent then
                             self.ParentWindow:SetAccent(c)
                         end
                     end
 
-                    local function bindSlider(slider, getter, setter)
+                    local function bindSlider(slider, setter)
                         local dragging = false
+
                         slider.InputBegan:Connect(function(input)
                             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                                 dragging = true
@@ -1146,12 +1191,14 @@ function Library:CreateWindow(title)
                                 setter(pct)
                             end
                         end)
+
                         UIS.InputChanged:Connect(function(input)
                             if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
                                 local pct = math.clamp((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
                                 setter(pct)
                             end
                         end)
+
                         UIS.InputEnded:Connect(function(input)
                             if input.UserInputType == Enum.UserInputType.MouseButton1 then
                                 dragging = false
@@ -1159,9 +1206,20 @@ function Library:CreateWindow(title)
                         end)
                     end
 
-                    bindSlider(hueSlider, function() return h end, function(p) h = p updateColor() end)
-                    bindSlider(satSlider, function() return s end, function(p) s = p updateColor() end)
-                    bindSlider(valSlider, function() return v end, function(p) v = p updateColor() end)
+                    bindSlider(hueSlider, function(p)
+                        h = p
+                        updateColor()
+                    end)
+
+                    bindSlider(satSlider, function(p)
+                        s = p
+                        updateColor()
+                    end)
+
+                    bindSlider(valSlider, function(p)
+                        v = p
+                        updateColor()
+                    end)
 
                     button.MouseButton1Click:Connect(function()
                         open = not open
@@ -1178,7 +1236,9 @@ function Library:CreateWindow(title)
 
                     register(wrap, text)
                     return {
-                        Get = function() return preview.BackgroundColor3 end,
+                        Get = function()
+                            return preview.BackgroundColor3
+                        end,
                     }
                 end
 
@@ -1203,8 +1263,11 @@ function Library:CreateWindow(title)
             for _, t in ipairs(self.ParentWindow.Tabs) do
                 Tween(t.Button, 0.12, {BackgroundColor3 = Theme.Panel})
                 local tStroke = t.Button:FindFirstChildOfClass("UIStroke")
-                if tStroke then Tween(tStroke, 0.12, {Color = Theme.Border}) end
+                if tStroke then
+                    Tween(tStroke, 0.12, {Color = Theme.Border})
+                end
                 t.Button.TextColor3 = Theme.SubText
+
                 for _, s in ipairs(t.SubTabs) do
                     s.Page.Visible = false
                     if s.Button then
@@ -1216,7 +1279,9 @@ function Library:CreateWindow(title)
 
             Tween(self.Button, 0.12, {BackgroundColor3 = Theme.Element})
             local activeStroke = self.Button:FindFirstChildOfClass("UIStroke")
-            if activeStroke then Tween(activeStroke, 0.12, {Color = Theme.Accent}) end
+            if activeStroke then
+                Tween(activeStroke, 0.12, {Color = Theme.Accent})
+            end
             self.Button.TextColor3 = Theme.Text
 
             self.ParentWindow.CurrentTab = self
@@ -1353,9 +1418,13 @@ function Library:CreateWindow(title)
             left:AddToggle("Show Character Preview", false, function(v)
                 if v then
                     self:CreatePreviewPanel()
-                    if self.PreviewPanel then self.PreviewPanel.Visible = true end
+                    if self.PreviewPanel then
+                        self.PreviewPanel.Visible = true
+                    end
                 else
-                    if self.PreviewPanel then self.PreviewPanel.Visible = false end
+                    if self.PreviewPanel then
+                        self.PreviewPanel.Visible = false
+                    end
                 end
             end)
             left:AddToggle("Enabled", false)
@@ -1397,8 +1466,12 @@ function Library:CreateWindow(title)
             end)
             left:AddToggle("Notifications", true)
             left:AddButton("Unload UI", function()
-                if self.PreviewConn then self.PreviewConn:Disconnect() end
-                if self.Blur then self.Blur:Destroy() end
+                if self.PreviewConn then
+                    self.PreviewConn:Disconnect()
+                end
+                if self.Blur then
+                    self.Blur:Destroy()
+                end
                 self.GUI:Destroy()
             end)
 
@@ -1417,6 +1490,7 @@ function Library:CreateWindow(title)
         mainTab:Show()
     end
 
+    self:BuildDemo()
     return self
 end
 
