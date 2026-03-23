@@ -24,8 +24,8 @@ local Theme = {
     Inline = Color3.fromRGB(30, 31, 43),
     Text = Color3.fromRGB(240, 240, 245),
     SubText = Color3.fromRGB(150, 153, 166),
-    Accent = Color3.fromRGB(160, 100, 255),
-    AccentDark = Color3.fromRGB(105, 65, 170),
+    Accent = Color3.fromRGB(212, 170, 60),
+    AccentDark = Color3.fromRGB(145, 112, 28),
     White = Color3.fromRGB(255, 255, 255),
     Green = Color3.fromRGB(0, 255, 140),
     Red = Color3.fromRGB(255, 70, 70),
@@ -35,7 +35,8 @@ local Theme = {
 local Icons = {
     Combat = "✦",
     Visuals = "◉",
-    Settings = "◎",
+    AutoFarm = "$",
+    Settings = "⚙",
 }
 
 local function Create(class, props)
@@ -309,7 +310,7 @@ function Library:CreateWindow(title)
         Distance = false,
         Health = false,
         Highlight = false,
-        BoxColor = Theme.Accent,
+        BoxColor = Color3.fromRGB(255, 255, 255),
         NameColor = Theme.Text,
         HealthColor = Theme.Green,
         DistanceColor = Theme.SubText,
@@ -324,12 +325,12 @@ function Library:CreateWindow(title)
         CircleRadius = 120,
         CircleThickness = 2,
         CircleTransparency = 0,
-        CircleColor = Theme.Accent,
+        CircleColor = Color3.fromRGB(212, 170, 60),
         CrosshairVisible = false,
         CrosshairSize = 10,
         CrosshairGap = 4,
         CrosshairThickness = 2,
-        CrosshairColor = Theme.Accent,
+        CrosshairColor = Color3.fromRGB(212, 170, 60),
         HitMarkerVisible = false,
         HitMarkerSize = 10,
         StatusTextVisible = true,
@@ -647,7 +648,7 @@ function Library:CreateWindow(title)
             Position = UDim2.new(0, 40, 1, -56),
             ZIndex = 80,
         })
-        Corner(card, 12)
+        Corner(card, 16)
         Stroke(card, Theme.Border, 1)
 
         local bar = Create("Frame", {
@@ -657,7 +658,7 @@ function Library:CreateWindow(title)
             Size = UDim2.new(0, 3, 1, 0),
             ZIndex = 81,
         })
-        Corner(bar, 12)
+        Corner(bar, 16)
         self:RegisterAccentObject(bar, "bg")
 
         Create("TextLabel", {
@@ -1341,7 +1342,7 @@ function Library:CreateWindow(title)
             end
 
             if self.CombatGui then
-                self.CombatGui.Visible = self.MenuVisible
+                self.CombatGui.Visible = true
             end
 
             if self.MenuVisible then
@@ -2331,9 +2332,9 @@ function Library:CreateWindow(title)
         ----------------------------------------------------------------
         -- COMBAT
         ----------------------------------------------------------------
-        local combatMain = combatTab:AddSubTab("Main")
+        local combatAim = combatTab:AddSubTab("Aim")
         do
-            local left = combatMain:AddSection("Aim", "left")
+            local left = combatAim:AddSection("Aim", "left")
             left:AddToggle("Enable Aim", false, function(v)
                 self.UIFlags.AimEnabled = v
                 self.CombatState.StatusText = v and "ACTIVE" or "READY"
@@ -2353,11 +2354,8 @@ function Library:CreateWindow(title)
             left:AddDropdown("Aim Part", {"Head", "Chest"}, "Head", function(v)
                 self.UIFlags.AimPart = v
             end)
-            left:AddDropdown("Aim Type", {"Legit", "Silent", "Assist"}, "Legit", function(v)
-                self.UIFlags.AimType = v
-            end)
 
-            local right = combatMain:AddSection("FOV", "right")
+            local right = combatAim:AddSection("Overlay", "right")
             right:AddToggle("Show FOV", true, function(v)
                 self.CombatState.CircleVisible = v
                 self:UpdateCombatOverlay()
@@ -2370,7 +2368,7 @@ function Library:CreateWindow(title)
                 self.CombatState.CircleTransparency = v
                 self:UpdateCombatOverlay()
             end)
-            right:AddColorPicker("FOV Color", Theme.Accent, function(c)
+            right:AddColorPicker("FOV Color", Color3.fromRGB(212, 170, 60), function(c)
                 self.CombatState.CircleColor = c
                 self:UpdateCombatOverlay()
             end)
@@ -2417,9 +2415,6 @@ function Library:CreateWindow(title)
                 self.CombatState.HitMarkerSize = v
                 self:UpdateCombatOverlay()
             end)
-            right:AddButton("Trigger Notification", function()
-                self:Notify("Combat feedback working")
-            end)
             right:AddButton("Refresh Overlay", function()
                 self:UpdateCombatOverlay()
                 self:Notify("Combat overlay refreshed")
@@ -2464,45 +2459,45 @@ function Library:CreateWindow(title)
                 self:UpdatePreviewESP()
             end)
 
-            local checks = players:AddSection("Checks", "left")
-            checks:AddToggle("Friend Check", false, function(v)
+            local mid = players:AddSection("Checks", "right")
+            mid:AddToggle("Friend Check", false, function(v)
                 self.UIFlags.ESPFriend = v
             end)
-            checks:AddToggle("Team Check", false, function(v)
+            mid:AddToggle("Team Check", false, function(v)
                 self.UIFlags.ESPTeam = v
             end)
-            checks:AddToggle("Visible Check", false, function(v)
+            mid:AddToggle("Visible Check", false, function(v)
                 self.UIFlags.ESPVisible = v
             end)
 
-            local right = players:AddSection("ESP Colors", "right")
-            right:AddColorPicker("Box Color", Color3.fromRGB(255, 255, 255), function(c)
+            local colors = players:AddSection("ESP Colors", "right")
+            colors:AddColorPicker("Box Color", Color3.fromRGB(255, 255, 255), function(c)
                 self.UIFlags.ESPBoxColor = c
                 self.PreviewState.BoxColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Line Color", Color3.fromRGB(0, 170, 255), function(c)
+            colors:AddColorPicker("Line Color", Color3.fromRGB(0, 170, 255), function(c)
                 self.UIFlags.ESPLineColor = c
             end)
-            right:AddColorPicker("Skeleton Color", Color3.fromRGB(255, 140, 0), function(c)
+            colors:AddColorPicker("Skeleton Color", Color3.fromRGB(255, 140, 0), function(c)
                 self.UIFlags.ESPSkeletonColor = c
             end)
-            right:AddColorPicker("Health Color", Theme.Green, function(c)
+            colors:AddColorPicker("Health Color", Theme.Green, function(c)
                 self.UIFlags.ESPHealthColor = c
                 self.PreviewState.HealthColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Name Color", Theme.Text, function(c)
+            colors:AddColorPicker("Name Color", Theme.Text, function(c)
                 self.UIFlags.ESPNameColor = c
                 self.PreviewState.NameColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Distance Color", Theme.SubText, function(c)
+            colors:AddColorPicker("Distance Color", Theme.SubText, function(c)
                 self.UIFlags.ESPDistanceColor = c
                 self.PreviewState.DistanceColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Friend Color", Color3.fromRGB(0, 255, 140), function(c)
+            colors:AddColorPicker("Friend Color", Color3.fromRGB(0, 255, 140), function(c)
                 self.UIFlags.ESPFriendColor = c
             end)
         end
@@ -2537,10 +2532,10 @@ function Library:CreateWindow(title)
                 self:UpdatePreviewESP()
             end)
 
-            local right = preview:AddSection("Preview Colors", "right")
-            right:AddLabel("Los colores del ESP son independientes del color del menú.")
-            right:AddLabel("ESP Mode permite cambiar entre Box y Corner.")
-            right:AddLabel("Aim y ESP siguen como UI solamente.")
+            local right = preview:AddSection("Notes", "right")
+            right:AddLabel("ESP colors are independent from the menu accent.")
+            right:AddLabel("ESP Mode lets you switch between Box and Corner.")
+            right:AddLabel("This file keeps aim and ESP as UI-only controls.")
         end
 
         local world = visualsTab:AddSubTab("World")
@@ -2617,9 +2612,9 @@ function Library:CreateWindow(title)
         ----------------------------------------------------------------
         -- AUTOFARM (UI ONLY)
         ----------------------------------------------------------------
-        local autoMain = autoFarmTab:AddSubTab("Main")
+        local autoFarm = autoFarmTab:AddSubTab("Auto Farm")
         do
-            local left = autoMain:AddSection("Automated Utilities", "left")
+            local left = autoFarm:AddSection("Automated Utilities", "left")
             left:AddToggle("Auto-Farm Cards", false, function(v)
                 self.UIFlags.AutoFarmCards = v
             end)
@@ -2629,9 +2624,10 @@ function Library:CreateWindow(title)
             left:AddToggle("Auto-Farm Marshmallows", false, function(v)
                 self.UIFlags.AutoFarmMarshmallows = v
             end)
-            left:AddSlider("Marshmallow Amount", 0, 50, 5, function(v)
+            left:AddSlider("Marshmallow Amount", 0, 10000, 950, function(v)
                 self.UIFlags.AutoFarmMarshmallowAmount = math.floor(v)
             end)
+            left:AddLabel("Maximum marshmallow amount: 10K")
             left:AddToggle("Auto-Farm Boxes", false, function(v)
                 self.UIFlags.AutoFarmBoxes = v
             end)
@@ -2639,7 +2635,7 @@ function Library:CreateWindow(title)
                 self.UIFlags.AutoFarmWebhook = v
             end)
 
-            local right = autoMain:AddSection("Checks", "right")
+            local right = autoFarm:AddSection("Checks", "right")
             right:AddToggle("Auto-Buy Gun If Death While Auto-Farming", false, function(v)
                 self.UIFlags.AutoBuyGun = v
             end)
@@ -2656,10 +2652,10 @@ function Library:CreateWindow(title)
 
         local autoStats = autoFarmTab:AddSubTab("Stats")
         do
-            local left = autoStats:AddSection("Auto Farm Stats Information", "left")
+            local left = autoStats:AddSection("Auto Farm Stats", "left")
             left:AddLabel("Auto Farm Time Elapsed | 0h, 13m, 28s")
             left:AddLabel("Money Gained | + $7,470")
-            left:AddLabel("UI only preview. No gameplay automation is executed.")
+            left:AddLabel("UI-only preview. No gameplay automation is executed.")
 
             local right = autoStats:AddSection("Rejoin Settings", "right")
             right:AddLabel("This will rejoin if you die while farming.")
@@ -2704,7 +2700,8 @@ function Library:CreateWindow(title)
             right:AddColorPicker("UI Accent", Theme.Accent, function(c)
                 self:ApplyAccentColor(c)
             end, true)
-            right:AddDropdown("Preset", {"Purple", "Blue", "Green", "Red", "White", "Orange"}, "Purple", function(v)
+            right:AddDropdown("Preset", {"Gold", "Purple", "Blue", "Green", "Red", "White", "Orange"}, "Gold", function(v)
+                if v == "Gold" then self:SetAccent(Color3.fromRGB(212, 170, 60)) end
                 if v == "Purple" then self:SetAccent(Color3.fromRGB(160, 100, 255)) end
                 if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
                 if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
@@ -2734,9 +2731,9 @@ function Library:CreateWindow(title)
             end)
 
             local right = settingsConfig:AddSection("Notes", "right")
-            right:AddLabel("No duplicate Aim or ESP options.")
-            right:AddLabel("Walk Speed, Jump Power and extra Info were removed.")
-            right:AddLabel("Menu accent no longer changes ESP colors.")
+            right:AddLabel("Duplicate Aim/ESP sections were removed from BuildDemo.")
+            right:AddLabel("Walk Speed, Jump Power and extra info were removed.")
+            right:AddLabel("Menu accent no longer changes ESP or FOV colors.")
         end
 
         combatTab:Show()
@@ -2748,6 +2745,10 @@ function Library:CreateWindow(title)
         self:ApplyVisualPreset("Default")
         self:UpdateCombatOverlay()
         self:ApplyPreviewVisible(true)
+
+        if self.CombatGui then
+            self.CombatGui.Visible = true
+        end
     end
 
 
