@@ -238,7 +238,7 @@ local function cloneCharacter(viewport)
     if primary then
         clone.PrimaryPart = primary
         pcall(function()
-            clone:PivotTo(CFrame.new(0, -1.7, 0))
+            clone:PivotTo(CFrame.new(0, -0.8, 0))
         end)
     end
 
