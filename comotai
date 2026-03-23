@@ -2644,4 +2644,15 @@ function Library:CreateWindow(title)
     return self
 end
 
+
+-- Busca donde hiciste el AddToggle para el ESP y ponle esto:
+left:AddToggle("Enable ESP", false, function(state)
+    Library.PreviewState.Visible = state
+end)
+
+-- Y el ColorPicker del ESP:
+left:AddColorPicker("ESP Color", Color3.fromRGB(255, 190, 40), function(color)
+    Library.PreviewState.BoxColor = color
+end)
+
 return Library
