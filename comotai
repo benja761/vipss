@@ -23,8 +23,8 @@ local Theme = {
     Inline = Color3.fromRGB(30, 31, 43),
     Text = Color3.fromRGB(240, 240, 245),
     SubText = Color3.fromRGB(150, 153, 166),
-    Accent = Color3.fromRGB(255, 196, 60),
-    AccentDark = Color3.fromRGB(166, 120, 18),
+    Accent = Color3.fromRGB(255, 190, 40),
+    AccentDark = Color3.fromRGB(180, 130, 20),
     White = Color3.fromRGB(255, 255, 255),
     Green = Color3.fromRGB(0, 255, 140),
     Red = Color3.fromRGB(255, 70, 70),
@@ -34,8 +34,8 @@ local Theme = {
 local Icons = {
     Combat = "✦",
     Visuals = "◉",
-    AutoFarm = "$",
     Settings = "◎",
+    AutoFarm = "$",
 }
 
 local function Create(class, props)
@@ -274,7 +274,6 @@ function Library:CreateWindow(title)
     self._UIScaleValue = 1
     self._BottomTabsVisible = true
     self._BlurEnabled = true
-    self._NotificationsEnabled = true
 
     self.PreviewState = {
         Visible = false,
@@ -291,6 +290,18 @@ function Library:CreateWindow(title)
         DistanceSize = 12,
         HealthValue = 86,
         DistanceValue = 23,
+        Mode = "Box",
+        Tracer = false,
+        Skeleton = false,
+        FriendCheck = false,
+        TeamCheck = false,
+        VisibleCheck = false,
+        BoxColor = Color3.fromRGB(255, 255, 255),
+        TracerColor = Color3.fromRGB(255, 255, 255),
+        SkeletonColor = Color3.fromRGB(255, 255, 255),
+        HealthBarColor = Color3.fromRGB(0, 255, 140),
+        NameColor = Color3.fromRGB(255, 255, 255),
+        DistanceColor = Color3.fromRGB(190, 190, 190),
     }
 
     self.CombatState = {
@@ -311,6 +322,14 @@ function Library:CreateWindow(title)
         StatusTextColor = Theme.Text,
         PulseVisible = false,
         PulseSize = 60,
+        AimEnabled = false,
+        AimFollowCursor = false,
+        ReleaseAimOnCursor = false,
+        AimKey = Enum.KeyCode.E,
+        Smooth = 5,
+        FOV = 120,
+        TeamCheck = true,
+        VisibilityCheck = false,
     }
 
     self._OriginalLighting = {
@@ -610,9 +629,6 @@ function Library:CreateWindow(title)
     end
 
     function self:Notify(text)
-        if self._NotificationsEnabled == false then
-            return
-        end
         local card = Create("Frame", {
             Parent = notifHolder,
             BackgroundColor3 = Theme.Panel,
@@ -631,7 +647,7 @@ function Library:CreateWindow(title)
             Size = UDim2.new(0, 3, 1, 0),
             ZIndex = 81,
         })
-        Corner(bar, 12)
+        Corner(bar, 8)
         self:RegisterAccentObject(bar, "bg")
 
         Create("TextLabel", {
@@ -867,10 +883,6 @@ function Library:CreateWindow(title)
 
     function self:ApplyMenuSounds(value)
         self._MenuSounds = value and true or false
-    end
-
-    function self:ApplyNotifications(value)
-        self._NotificationsEnabled = value and true or false
     end
 
     function self:ApplySmoothOpen(value)
@@ -1676,6 +1688,9 @@ function Library:CreateWindow(title)
                         state = not state
                         self.ParentWindow:PlayMenuSound("pop")
                         render()
+                        if self.ParentWindow and self.ParentWindow.Notify then
+                            self.ParentWindow:Notify(text .. (state and " Activado" or " Desactivado"))
+                        end
                         if callback then
                             callback(state)
                         end
@@ -2291,6 +2306,11 @@ function Library:CreateWindow(title)
 
 
     function self:BuildDemo()
+        if self._DemoBuilt then
+            return
+        end
+        self._DemoBuilt = true
+
         self:PlayMenuSound("pop")
         self:Notify("UI loaded successfully")
 
@@ -2305,77 +2325,76 @@ function Library:CreateWindow(title)
         local combatAim = combatTab:AddSubTab("Aim")
         do
             local left = combatAim:AddSection("Aim Settings", "left")
-            left:AddToggle("Aim Enabled", false)
-            left:AddKeybind("Aim Key", Enum.KeyCode.E)
-            left:AddSlider("Aim Smooth", 0, 20, 5)
-            left:AddSlider("Aim FOV Radius", 0, 480, 120, function(v)
+            left:AddToggle("Aim Enabled", false, function(v)
+                self.CombatState.AimEnabled = v
+            end)
+            left:AddToggle("Aim Follow Cursor", false, function(v)
+                self.CombatState.AimFollowCursor = v
+            end)
+            left:AddToggle("Release Aim On Cursor", false, function(v)
+                self.CombatState.ReleaseAimOnCursor = v
+            end)
+            left:AddKeybind("Aim Key", Enum.KeyCode.E, function(key)
+                self.CombatState.AimKey = key
+            end)
+            left:AddSlider("Smooth", 0, 20, 5, function(v)
+                self.CombatState.Smooth = v
+            end)
+            left:AddSlider("FOV", 0, 480, 120, function(v)
+                self.CombatState.FOV = v
                 self.CombatState.CircleRadius = v
                 self:UpdateCombatOverlay()
             end)
-            left:AddDropdown("Aim Part", {"Head", "Chest"}, "Head")
-            left:AddDropdown("Aim Mode", {"Hold", "Toggle"}, "Hold")
 
             local right = combatAim:AddSection("Aim Checks", "right")
-            right:AddToggle("Aim Team Check", true)
-            right:AddToggle("Aim Visible Check", false)
-            right:AddToggle("Aim Friend Check", false)
-            right:AddToggle("Show Aim FOV", true, function(v)
+            right:AddToggle("Team Check", true, function(v)
+                self.CombatState.TeamCheck = v
+            end)
+            right:AddToggle("Visibility Check", false, function(v)
+                self.CombatState.VisibilityCheck = v
+            end)
+            right:AddLabel("Estas opciones son solo UI.")
+        end
+
+        local combatOverlay = combatTab:AddSubTab("Overlay")
+        do
+            local left = combatOverlay:AddSection("FOV Circle", "left")
+            left:AddToggle("Show FOV Circle", true, function(v)
                 self.CombatState.CircleVisible = v
                 self:UpdateCombatOverlay()
             end)
-            right:AddSlider("Aim FOV Thickness", 1, 8, 2, function(v)
+            left:AddSlider("FOV Thickness", 1, 8, 2, function(v)
                 self.CombatState.CircleThickness = v
                 self:UpdateCombatOverlay()
             end)
-            right:AddColorPicker("Aim FOV Color", Color3.fromRGB(255, 196, 60), function(c)
+            left:AddSlider("FOV Transparency", 0, 1, 0, function(v)
+                self.CombatState.CircleTransparency = v
+                self:UpdateCombatOverlay()
+            end)
+            left:AddColorPicker("FOV Color", Color3.fromRGB(255, 190, 40), function(c)
                 self.CombatState.CircleColor = c
                 self:UpdateCombatOverlay()
             end)
-        end
 
-        local combatHud = combatTab:AddSubTab("Overlay")
-        do
-            local left = combatHud:AddSection("Crosshair Overlay", "left")
-            left:AddToggle("Show Crosshair Overlay", false, function(v)
+            local right = combatOverlay:AddSection("Crosshair", "right")
+            right:AddToggle("Show Crosshair", false, function(v)
                 self.CombatState.CrosshairVisible = v
                 self:UpdateCombatOverlay()
             end)
-            left:AddSlider("Crosshair Overlay Size", 4, 24, 10, function(v)
+            right:AddSlider("Crosshair Size", 4, 24, 10, function(v)
                 self.CombatState.CrosshairSize = v
                 self:UpdateCombatOverlay()
             end)
-            left:AddSlider("Crosshair Overlay Gap", 1, 12, 4, function(v)
+            right:AddSlider("Crosshair Gap", 1, 12, 4, function(v)
                 self.CombatState.CrosshairGap = v
                 self:UpdateCombatOverlay()
             end)
-            left:AddSlider("Crosshair Overlay Thickness", 1, 6, 2, function(v)
+            right:AddSlider("Crosshair Thickness", 1, 6, 2, function(v)
                 self.CombatState.CrosshairThickness = v
                 self:UpdateCombatOverlay()
             end)
-            left:AddColorPicker("Crosshair Overlay Color", Color3.fromRGB(255, 196, 60), function(c)
+            right:AddColorPicker("Crosshair Color", Color3.fromRGB(255, 190, 40), function(c)
                 self.CombatState.CrosshairColor = c
-                self:UpdateCombatOverlay()
-            end)
-
-            local right = combatHud:AddSection("Status Overlay", "right")
-            right:AddToggle("Show Status Overlay", true, function(v)
-                self.CombatState.StatusTextVisible = v
-                self:UpdateCombatOverlay()
-            end)
-            right:AddDropdown("Status Overlay Mode", {"READY", "ACTIVE", "SAFE", "TRAINING"}, "READY", function(v)
-                self.CombatState.StatusText = v
-                self:UpdateCombatOverlay()
-            end)
-            right:AddColorPicker("Status Overlay Color", Theme.Text, function(c)
-                self.CombatState.StatusTextColor = c
-                self:UpdateCombatOverlay()
-            end)
-            right:AddToggle("Show Pulse Overlay", false, function(v)
-                self.CombatState.PulseVisible = v
-                self:UpdateCombatOverlay()
-            end)
-            right:AddSlider("Pulse Overlay Size", 30, 120, 60, function(v)
-                self.CombatState.PulseSize = v
                 self:UpdateCombatOverlay()
             end)
         end
@@ -2385,169 +2404,162 @@ function Library:CreateWindow(title)
         ----------------------------------------------------------------
         local players = visualsTab:AddSubTab("Players")
         do
-            local left = players:AddSection("Player ESP", "left")
-            left:AddToggle("Player ESP Enabled", false)
-            left:AddDropdown("Player ESP Mode", {"Box", "Corner"}, "Box", function(v)
-                self.PreviewState.ESPMode = v
+            local left = players:AddSection("Preview", "left")
+            left:AddToggle("Show Character Preview", true, function(v)
+                self:ApplyPreviewVisible(v)
             end)
-            left:AddToggle("Player ESP Line", false)
-            left:AddToggle("Player ESP Skeleton", false)
-            left:AddToggle("Player ESP Health", false, function(v)
-                self.PreviewState.Health = v
+            left:AddSlider("Preview Rotation Speed", 1, 40, 16, function(v)
+                self:ApplyPreviewRotationSpeed(v)
+            end)
+            left:AddButton("Refresh Character", function()
+                self:RefreshCharacterPreview()
+                self:Notify("Character refreshed")
+            end)
+            left:AddLabel("Activa las opciones y verás cómo quedan en tu personaje.")
+
+            local right = players:AddSection("ESP Settings", "right")
+            right:AddToggle("ESP Enabled", false)
+            right:AddDropdown("ESP Mode", {"Box", "Corner"}, "Box", function(v)
+                self.PreviewState.Mode = v
+            end)
+            right:AddToggle("Show Box", false, function(v)
+                self.PreviewState.Box = v
                 self:UpdatePreviewESP()
             end)
-            left:AddToggle("Player ESP Name", true, function(v)
+            right:AddToggle("Show Name", true, function(v)
                 self.PreviewState.Name = v
                 self:UpdatePreviewESP()
             end)
-            left:AddToggle("Player ESP Distance", false, function(v)
+            right:AddToggle("Show Distance", false, function(v)
                 self.PreviewState.Distance = v
                 self:UpdatePreviewESP()
             end)
-
-            local right = players:AddSection("Player Filters", "right")
-            right:AddToggle("Player Team Filter", true)
-            right:AddToggle("Player Visibility Filter", false)
-            right:AddToggle("Player Friend Filter", false)
-            right:AddToggle("Show Character Preview", true, function(v)
-                self:ApplyPreviewVisible(v)
+            right:AddToggle("Show Health", false, function(v)
+                self.PreviewState.Health = v
+                self:UpdatePreviewESP()
             end)
-            right:AddSlider("Character Preview Rotation", 1, 40, 16, function(v)
-                self:ApplyPreviewRotationSpeed(v)
+            right:AddToggle("Show Highlight", false, function(v)
+                self.PreviewState.Highlight = v
+                self:UpdatePreviewESP()
             end)
-            right:AddButton("Refresh Character Preview", function()
-                self:RefreshCharacterPreview()
-                self:Notify("Character preview refreshed")
+            right:AddToggle("Tracer", false, function(v)
+                self.PreviewState.Tracer = v
+            end)
+            right:AddToggle("Skeleton", false, function(v)
+                self.PreviewState.Skeleton = v
+            end)
+            right:AddToggle("Friend Check", false, function(v)
+                self.PreviewState.FriendCheck = v
+            end)
+            right:AddToggle("Team Check", false, function(v)
+                self.PreviewState.TeamCheck = v
+            end)
+            right:AddToggle("Visible Check", false, function(v)
+                self.PreviewState.VisibleCheck = v
             end)
         end
 
         local preview = visualsTab:AddSubTab("Preview")
         do
             local left = preview:AddSection("Preview Values", "left")
-            left:AddToggle("Preview Box", false, function(v)
-                self.PreviewState.Box = v
-                self:UpdatePreviewESP()
-            end)
-            left:AddToggle("Preview Highlight", false, function(v)
-                self.PreviewState.Highlight = v
-                self:UpdatePreviewESP()
-            end)
-            left:AddSlider("Preview Name Size", 10, 24, 14, function(v)
+            left:AddSlider("Name Size", 10, 24, 14, function(v)
                 self.PreviewState.NameSize = v
                 self:UpdatePreviewESP()
             end)
-            left:AddSlider("Preview Distance Size", 10, 22, 12, function(v)
+            left:AddSlider("Distance Size", 10, 22, 12, function(v)
                 self.PreviewState.DistanceSize = v
                 self:UpdatePreviewESP()
             end)
-            left:AddSlider("Preview Distance Value", 1, 500, 23, function(v)
+            left:AddSlider("Distance Value", 1, 500, 23, function(v)
                 self.PreviewState.DistanceValue = math.floor(v)
                 self:UpdatePreviewESP()
             end)
-            left:AddSlider("Preview Health Value", 1, 100, 86, function(v)
+            left:AddSlider("Health Value", 1, 100, 86, function(v)
                 self.PreviewState.HealthValue = math.floor(v)
                 self:UpdatePreviewESP()
             end)
 
-            local right = preview:AddSection("Preview Colors", "right")
-            right:AddColorPicker("Preview Box Color", Color3.fromRGB(255,255,255), function(c)
+            local right = preview:AddSection("ESP Colors", "right")
+            right:AddColorPicker("Box Color", Color3.fromRGB(255, 255, 255), function(c)
                 self.PreviewState.BoxColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Preview Line Color", Color3.fromRGB(0,170,255), function(c)
-                self.PreviewState.LineColor = c
-            end)
-            right:AddColorPicker("Preview Skeleton Color", Color3.fromRGB(255,170,0), function(c)
-                self.PreviewState.SkeletonColor = c
-            end)
-            right:AddColorPicker("Preview Health Color", Theme.Green, function(c)
-                self.PreviewState.HealthColor = c
-                self:UpdatePreviewESP()
-            end)
-            right:AddColorPicker("Preview Name Color", Theme.Text, function(c)
+            right:AddColorPicker("Name Color", Color3.fromRGB(255, 255, 255), function(c)
                 self.PreviewState.NameColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Preview Distance Color", Theme.SubText, function(c)
+            right:AddColorPicker("Distance Color", Color3.fromRGB(190, 190, 190), function(c)
                 self.PreviewState.DistanceColor = c
                 self:UpdatePreviewESP()
             end)
-            right:AddColorPicker("Preview Friend Color", Color3.fromRGB(0,255,140), function(c)
-                self.PreviewState.FriendColor = c
+            right:AddColorPicker("Health Color", Color3.fromRGB(0, 255, 140), function(c)
+                self.PreviewState.HealthColor = c
+                self:UpdatePreviewESP()
+            end)
+            right:AddColorPicker("Tracer Color", Color3.fromRGB(255, 255, 255), function(c)
+                self.PreviewState.TracerColor = c
+            end)
+            right:AddColorPicker("Skeleton Color", Color3.fromRGB(255, 255, 255), function(c)
+                self.PreviewState.SkeletonColor = c
             end)
         end
 
         local world = visualsTab:AddSubTab("World")
         do
-            local left = world:AddSection("World Ambient", "left")
+            local left = world:AddSection("World Settings", "left")
             left:AddToggle("Ambient Enabled", false, function(v)
                 self:ApplyAmbientEnabled(v, self._AmbientColor)
             end)
-            left:AddColorPicker("Ambient Light Color", Color3.fromRGB(255, 196, 60), function(c)
+            left:AddColorPicker("Ambient Color", Color3.fromRGB(255, 190, 40), function(c)
                 self:ApplyAmbientColor(c)
             end)
-            left:AddSlider("World Brightness", 0, 10, 2, function(v)
+            left:AddSlider("Brightness", 0, 10, 2, function(v)
                 self:ApplyBrightness(v)
             end)
-            left:AddSlider("World Clock Time", 0, 24, 14, function(v)
+            left:AddSlider("Clock Time", 0, 24, 14, function(v)
                 self:ApplyClockTime(v)
             end)
-            left:AddSlider("World Fog End", 100, 100000, 100000, function(v)
+            left:AddSlider("Fog End", 100, 100000, 100000, function(v)
                 self:ApplyFogEnd(v)
             end)
 
-            local right = world:AddSection("World Lighting", "right")
-            right:AddDropdown("World Visual Preset", {"Default", "Night", "Warm", "Cold", "Studio"}, "Default", function(v)
-                self:ApplyVisualPreset(v)
+            local right = world:AddSection("Camera", "right")
+            right:AddSlider("Field Of View", 40, 120, 70, function(v)
+                self:ApplyFOV(v)
             end)
-            right:AddToggle("World Shadows", true, function(v)
-                self:ApplyShadows(v)
+            right:AddToggle("Enabled Resolution", false, function(v)
+                self:ApplyStretchEnabled(v)
             end)
-            right:AddSlider("World Exposure", -5, 5, 0, function(v)
-                self:ApplyExposure(v)
+            right:AddSlider("Stretch Amount", 0, 40, 0, function(v)
+                self:ApplyStretchAmount(v)
             end)
-            right:AddColorPicker("World Top Color", Color3.new(0,0,0), function(c)
-                self:ApplyColorShiftTop(c)
+            right:AddToggle("Fullbright", false, function(v)
+                self:ApplyFullbright(v)
             end)
-            right:AddColorPicker("World Bottom Color", Color3.new(0,0,0), function(c)
-                self:ApplyColorShiftBottom(c)
+            right:AddToggle("Depth Blur", false, function(v)
+                self:ApplyDepthBlur(v)
             end)
         end
 
         ----------------------------------------------------------------
-        -- AUTOFARM
+        -- AUTO FARM
         ----------------------------------------------------------------
-        local farmMain = autoFarmTab:AddSubTab("Auto Farm")
+        local farm = autoFarmTab:AddSubTab("Auto Farm")
         do
-            local left = farmMain:AddSection("Farm Utilities", "left")
-            left:AddToggle("Farm Cards", false)
-            left:AddToggle("Farm Chips", false)
-            left:AddToggle("Farm Marshmallows", false)
-            left:AddSlider("Marshmallow Buy Amount", 0, 10000, 950)
-            left:AddToggle("Farm Boxes", false)
-            left:AddToggle("Farm Webhook", false)
+            local left = farm:AddSection("Marshmellow Farm", "left")
+            left:AddToggle("Auto Buy Marshmellow", false)
+            left:AddSlider("Marshmellow Amount", 0, 10000, 1000)
+            left:AddToggle("Auto Eat Marshmellow", false)
+            left:AddToggle("Auto Refill", false)
 
-            local right = farmMain:AddSection("Farm Safety", "right")
-            right:AddToggle("Farm Auto-Buy Gun On Death", false)
-            right:AddToggle("Farm Auto-Buy Mask On Death", false)
-            right:AddToggle("Farm Auto-Buy Ammo On Death", false)
-            right:AddToggle("Farm Rejoin On Disconnect", false)
-            right:AddToggle("Farm Keep Gear Ready", false)
-            right:AddLabel("UI only preview. No gameplay automation is executed.")
-        end
-
-        local farmStats = autoFarmTab:AddSubTab("Stats")
-        do
-            local left = farmStats:AddSection("Farm Session Stats", "left")
-            left:AddLabel("Auto Farm Time Elapsed | 0h, 13m, 28s")
-            left:AddLabel("Money Gained | + $7,470", Theme.Green)
-            left:AddLabel("UI only preview. No gameplay automation is executed.")
-
-            local right = farmStats:AddSection("Farm Rejoin", "right")
-            right:AddLabel("This will rejoin if you die while farming.")
-            right:AddLabel("Everything is recommended on.")
-            right:AddToggle("Farm Rejoin Enabled", false)
-            right:AddToggle("Farm Rejoin Auto-Buy Guns", false)
+            local right = farm:AddSection("Farm Options", "right")
+            right:AddToggle("Auto Collect", false)
+            right:AddToggle("Auto Sell", false)
+            right:AddToggle("Auto Rejoin", false)
+            right:AddDropdown("Rejoin Method", {"Server Hop", "Same Server", "Last Server"}, "Server Hop")
+            right:AddButton("Show Farm Status", function()
+                self:Notify("Auto Farm UI only")
+            end)
         end
 
         ----------------------------------------------------------------
@@ -2555,74 +2567,66 @@ function Library:CreateWindow(title)
         ----------------------------------------------------------------
         local settingsUI = settingsTab:AddSubTab("UI")
         do
-            local left = settingsUI:AddSection("UI Effects", "left")
-            left:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
-                self:ApplyHideKey(key)
-            end)
-            left:AddToggle("UI Notifications", true, function(v)
-                self:ApplyNotifications(v)
-            end)
-            left:AddToggle("UI Blur Enabled", true, function(v)
+            local left = settingsUI:AddSection("Menu Effects", "left")
+            left:AddToggle("Blur Enabled", true, function(v)
                 self:ApplyBlurEnabled(v)
             end)
-            left:AddSlider("UI Blur Size", 0, 20, 4, function(v)
+            left:AddSlider("Blur Size", 0, 20, 4, function(v)
                 self:ApplyBlurSize(v)
             end)
-            left:AddToggle("UI Bottom Tabs", true, function(v)
+            left:AddToggle("Show Bottom Tabs", true, function(v)
                 self:ApplyBottomTabsVisible(v)
             end)
-            left:AddToggle("UI Menu Sounds", true, function(v)
+            left:AddToggle("Menu Sounds", true, function(v)
                 self:ApplyMenuSounds(v)
             end)
-            left:AddToggle("UI Smooth Open", true, function(v)
+            left:AddToggle("Smooth Open", true, function(v)
                 self:ApplySmoothOpen(v)
             end)
 
-            local right = settingsUI:AddSection("UI Theme", "right")
-            right:AddColorPicker("UI Accent Color", Color3.fromRGB(255, 196, 60), function(c)
+            local right = settingsUI:AddSection("Theme", "right")
+            right:AddColorPicker("UI Accent", Theme.Accent, function(c)
                 self:ApplyAccentColor(c)
             end, true)
-            right:AddDropdown("UI Preset", {"Gold", "Purple", "Blue", "Green", "Red", "White"}, "Gold", function(v)
-                if v == "Gold" then self:SetAccent(Color3.fromRGB(255, 196, 60)) end
+            right:AddDropdown("Preset", {"Gold", "Purple", "Blue", "Green", "Red", "White", "Orange"}, "Gold", function(v)
+                if v == "Gold" then self:SetAccent(Color3.fromRGB(255, 190, 40)) end
                 if v == "Purple" then self:SetAccent(Color3.fromRGB(160, 100, 255)) end
                 if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
                 if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
                 if v == "Red" then self:SetAccent(Color3.fromRGB(255, 70, 70)) end
                 if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
+                if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
             end)
             right:AddSlider("UI Scale", 0.8, 1.3, 1, function(v)
                 self:ApplyUIScale(v)
             end)
-            right:AddSlider("UI Animation Speed", 0.05, 1, 0.18)
-            right:AddToggle("UI Rounded Theme", true)
+            right:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
+                self:ApplyHideKey(key)
+            end)
         end
 
         local settingsConfig = settingsTab:AddSubTab("Config")
         do
-            local left = settingsConfig:AddSection("Config Slots", "left")
-            left:AddDropdown("Config Slot", {"Default", "Gold", "Visual"}, "Default")
-            left:AddButton("Load Config Slot", function()
+            local left = settingsConfig:AddSection("Config", "left")
+            left:AddDropdown("Config Slot", {"Default", "Legit", "Visual"}, "Default")
+            left:AddButton("Load Config", function()
                 self:Notify("Load clicked")
             end)
-            left:AddButton("Save Config Slot", function()
+            left:AddButton("Save Config", function()
                 self:Notify("Save clicked")
             end)
-            left:AddButton("Reset Config Slot", function()
+            left:AddButton("Reset Config", function()
                 self:Notify("Reset clicked")
             end)
 
-            local right = settingsConfig:AddSection("Config Actions", "right")
-            right:AddButton("Show Test Notification", function()
+            local right = settingsConfig:AddSection("Preview Tools", "right")
+            right:AddButton("Refresh Preview", function()
+                self:RefreshCharacterPreview()
+            end)
+            right:AddButton("Show Notification", function()
                 self:Notify("Settings tab working")
             end)
-            right:AddButton("Refresh Preview Panel", function()
-                self:RefreshCharacterPreview()
-                self:Notify("Preview refreshed")
-            end)
-            right:AddButton("Refresh Overlay Panel", function()
-                self:UpdateCombatOverlay()
-                self:Notify("Overlay refreshed")
-            end)
+            right:AddLabel("Sin opciones duplicadas.")
         end
 
         combatTab:Show()
