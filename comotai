@@ -2643,6 +2643,44 @@ function Library:CreateWindow(title)
     self:BuildDemo()
     return self
 end
+local UIS = game:GetService("UserInputService")
+
+Library.AimKey = Enum.KeyCode.E
+Library.AimActive = false
+
+UIS.InputBegan:Connect(function(input, gp)
+    if gp then return end
+
+    -- TOGGLE MENU
+    if input.KeyCode == self.HideKey then
+        self.MenuVisible = not self.MenuVisible
+        main.Visible = self.MenuVisible
+
+        if self.MenuVisible then
+            self:PlayMenuSound("open")
+        else
+            self:PlayMenuSound("close")
+        end
+    end
+
+    -- AIM KEY (AQUÍ MISMO)
+    if input.KeyCode == self.CombatState.AimKey then
+        self.CombatState.AimEnabled = not self.CombatState.AimEnabled
+
+        if self.Notify then
+            self:Notify("Aim " .. (self.CombatState.AimEnabled and "Activado" or "Desactivado"))
+        end
+
+        if self.CombatState.StatusTextVisible then
+            self.CombatState.StatusText = self.CombatState.AimEnabled and "AIM ON" or "AIM OFF"
+        end
+
+        if self.UpdateCombatOverlay then
+            self:UpdateCombatOverlay()
+        end
+    end
+end)
+
 
 
 return Library
