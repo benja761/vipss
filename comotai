@@ -1,3 +1,4 @@
+
 -- Valary-style safe UI library for Roblox Studio
 -- Visual framework only. No exploit or cheat logic.
 
@@ -712,14 +713,6 @@ function Library:CreateWindow(title)
             end
         end
 
-        if self.PreviewState then
-            self.PreviewState.BoxColor = color
-        end
-
-        if self.CombatState then
-            self.CombatState.CircleColor = color
-            self.CombatState.CrosshairColor = color
-        end
 
         for _, toggleData in ipairs(self.LiveToggles or {}) do
             if toggleData and toggleData.Render and toggleData.Switch and toggleData.Switch.Parent then
@@ -2358,12 +2351,6 @@ function Library:CreateWindow(title)
             left:AddDropdown("Aim Part", {"Head", "Chest"}, "Head", function(v)
                 self.UIFlags.AimPart = v
             end)
-            left:AddToggle("Team Check", true, function(v)
-                self.UIFlags.TeamCheck = v
-            end)
-            left:AddToggle("Visibility Check", false, function(v)
-                self.UIFlags.VisibilityCheck = v
-            end)
 
             local right = combatMain:AddSection("FOV & Crosshair", "right")
             right:AddToggle("Show FOV", true, function(v)
@@ -2442,14 +2429,10 @@ function Library:CreateWindow(title)
             left:AddSlider("Sensitivity", 0, 1, 0.15)
             left:AddLabel("UI only. Aim controls do not run gameplay logic.")
 
-            local right = combatConfig:AddSection("Controls", "right")
-            right:AddKeybind("Combat Menu Key", Enum.KeyCode.Z, function(key)
-                self:ApplyHideKey(key)
-            end)
-            right:AddToggle("Menu Sounds", true, function(v)
-                self:ApplyMenuSounds(v)
-            end)
-            right:AddLabel("No duplicated combat options.")
+            local right = combatConfig:AddSection("Info", "right")
+            right:AddLabel("Aim Key, Smooth y FOV están solo una vez.")
+            right:AddLabel("Sin opciones repetidas en Combat.")
+            right:AddLabel("Las notificaciones muestran activado y desactivado.")
         end
 
         ----------------------------------------------------------------
@@ -2497,6 +2480,8 @@ function Library:CreateWindow(title)
             local left = players:AddSection("ESP", "left")
             left:AddToggle("ESP Enabled", false, function(v)
                 self.UIFlags.ESPEnabled = v
+                self.PreviewState.Box = v
+                self:UpdatePreviewESP()
             end)
             left:AddDropdown("ESP Mode", {"Box", "Corner"}, "Box", function(v)
                 self.UIFlags.ESPMode = v
@@ -2525,13 +2510,15 @@ function Library:CreateWindow(title)
                 self.PreviewState.Distance = v
                 self:UpdatePreviewESP()
             end)
-            left:AddToggle("ESP Friend", false, function(v)
+
+            local checks = players:AddSection("Checks", "left")
+            checks:AddToggle("Friend Check", false, function(v)
                 self.UIFlags.ESPFriend = v
             end)
-            left:AddToggle("Team Check", false, function(v)
+            checks:AddToggle("Team Check", false, function(v)
                 self.UIFlags.ESPTeam = v
             end)
-            left:AddToggle("Visible Check", false, function(v)
+            checks:AddToggle("Visible Check", false, function(v)
                 self.UIFlags.ESPVisible = v
             end)
 
@@ -2603,41 +2590,16 @@ function Library:CreateWindow(title)
             right:AddLabel("Box y Corner están unidos en un solo modo.")
         end
 
-        local uiVisual = visualsTab:AddSubTab("UI")
+        local playersInfo = visualsTab:AddSubTab("Info")
         do
-            local left = uiVisual:AddSection("Menu Effects", "left")
-            left:AddToggle("Blur Enabled", true, function(v)
-                self:ApplyBlurEnabled(v)
-            end)
-            left:AddSlider("Blur Size", 0, 20, 4, function(v)
-                self:ApplyBlurSize(v)
-            end)
-            left:AddToggle("Show Bottom Tabs", true, function(v)
-                self:ApplyBottomTabsVisible(v)
-            end)
-            left:AddToggle("Menu Sounds", true, function(v)
-                self:ApplyMenuSounds(v)
-            end)
-            left:AddToggle("Smooth Open", true, function(v)
-                self:ApplySmoothOpen(v)
-            end)
+            local left = playersInfo:AddSection("Visual Info", "left")
+            left:AddLabel("Los colores de ESP son independientes del color del menú.")
+            left:AddLabel("Las opciones de UI fueron movidas a Settings > UI.")
+            left:AddLabel("No hay opciones duplicadas en Players.")
 
-            local right = uiVisual:AddSection("Theme", "right")
-            right:AddColorPicker("UI Accent", Theme.Accent, function(c)
-                self:ApplyAccentColor(c)
-            end, true)
-            right:AddDropdown("Preset", {"Purple", "Blue", "Green", "Red", "White", "Orange"}, "Purple", function(v)
-                if v == "Purple" then self:SetAccent(Color3.fromRGB(160, 100, 255)) end
-                if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
-                if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
-                if v == "Red" then self:SetAccent(Color3.fromRGB(255, 70, 70)) end
-                if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
-                if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
-            end)
-            right:AddSlider("UI Scale", 0.8, 1.3, 1, function(v)
-                self:ApplyUIScale(v)
-            end)
-            right:AddToggle("Rounded Theme", true)
+            local right = playersInfo:AddSection("Style", "right")
+            right:AddLabel("Preview, notifications y tabs conservan el diseño original.")
+            right:AddLabel("Los cambios están enfocados solo en orden y claridad.")
         end
 
         local lighting = visualsTab:AddSubTab("Lighting")
@@ -2684,9 +2646,6 @@ function Library:CreateWindow(title)
             left:AddButton("Show Notification", function()
                 self:Notify("Settings tab working")
             end)
-            left:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
-                self:ApplyHideKey(key)
-            end)
             left:AddToggle("Notifications", true, function(v)
                 self.NotificationsEnabled = v
             end)
@@ -2704,13 +2663,33 @@ function Library:CreateWindow(title)
             end)
         end
 
-        local settingsTheme = settingsTab:AddSubTab("Theme")
+        local settingsUI = settingsTab:AddSubTab("UI")
         do
-            local left = settingsTheme:AddSection("Theme Color", "left")
-            left:AddColorPicker("Accent", Theme.Accent, function(c)
-                self:SetAccent(c)
+            local left = settingsUI:AddSection("Menu Effects", "left")
+            left:AddKeybind("Hide Key", Enum.KeyCode.Z, function(key)
+                self:ApplyHideKey(key)
+            end)
+            left:AddToggle("Blur Enabled", true, function(v)
+                self:ApplyBlurEnabled(v)
+            end)
+            left:AddSlider("Blur Size", 0, 20, 4, function(v)
+                self:ApplyBlurSize(v)
+            end)
+            left:AddToggle("Show Bottom Tabs", true, function(v)
+                self:ApplyBottomTabsVisible(v)
+            end)
+            left:AddToggle("Menu Sounds", true, function(v)
+                self:ApplyMenuSounds(v)
+            end)
+            left:AddToggle("Smooth Open", true, function(v)
+                self:ApplySmoothOpen(v)
+            end)
+
+            local right = settingsUI:AddSection("Theme", "right")
+            right:AddColorPicker("UI Accent", Theme.Accent, function(c)
+                self:ApplyAccentColor(c)
             end, true)
-            left:AddDropdown("Preset", {"Purple", "Blue", "Green", "Red", "White", "Orange"}, "Purple", function(v)
+            right:AddDropdown("Preset", {"Purple", "Blue", "Green", "Red", "White", "Orange"}, "Purple", function(v)
                 if v == "Purple" then self:SetAccent(Color3.fromRGB(160, 100, 255)) end
                 if v == "Blue" then self:SetAccent(Color3.fromRGB(0, 170, 255)) end
                 if v == "Green" then self:SetAccent(Color3.fromRGB(0, 255, 140)) end
@@ -2718,15 +2697,11 @@ function Library:CreateWindow(title)
                 if v == "White" then self:SetAccent(Color3.fromRGB(230, 230, 230)) end
                 if v == "Orange" then self:SetAccent(Color3.fromRGB(255, 140, 0)) end
             end)
-
-            local right = settingsTheme:AddSection("Misc", "right")
-            right:AddToggle("Intro Sound", true, function(v)
-                self:ApplyMenuSounds(v)
-            end)
-            right:AddToggle("Button Sound", true, function(v)
-                self:ApplyMenuSounds(v)
+            right:AddSlider("UI Scale", 0.8, 1.3, 1, function(v)
+                self:ApplyUIScale(v)
             end)
             right:AddSlider("Animation Speed", 0.05, 1, 0.18)
+            right:AddToggle("Rounded Theme", true)
         end
 
         local settingsConfig = settingsTab:AddSubTab("Config")
@@ -2744,9 +2719,9 @@ function Library:CreateWindow(title)
             end)
 
             local right = settingsConfig:AddSection("Info", "right")
-            right:AddLabel("No duplicate options.")
-            right:AddLabel("Aim y ESP quedan como UI only.")
-            right:AddLabel("Cada color de ESP es independiente.")
+            right:AddLabel("No hay opciones repetidas.")
+            right:AddLabel("Aim y ESP siguen como UI only.")
+            right:AddLabel("El color del menú no cambia los colores del ESP.")
         end
 
         combatTab:Show()
