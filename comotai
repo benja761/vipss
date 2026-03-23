@@ -1,7 +1,4 @@
 
--- Valary-style safe UI library for Roblox Studio
--- Visual framework only. No exploit or cheat logic.
-
 local Library = {}
 Library.__index = Library
 
