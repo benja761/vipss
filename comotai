@@ -749,7 +749,6 @@ function Library:CreateWindow(title)
             end
         end
     end
-    end
 
     function self:ApplyFOV(value)
         self.BaseFOV = tonumber(value) or 70
