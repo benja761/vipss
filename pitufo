@@ -1,0 +1,51 @@
+-- PITUFO WX7: MODO ERROR CRÍTICO (EXTREMADAMENTE MOLESTO)
+-- Este script satura audio, consola y notificaciones cada 1 segundo.
+
+local StarterGui = game:GetService("StarterGui")
+local SoundService = game:GetService("SoundService")
+
+-- CONFIGURACIÓN DEL SONIDO (ID de Error Crítico)
+local errorSound = Instance.new("Sound")
+errorSound.SoundId = "rbxassetid://4612375231" -- Sonido de alarma de error de Windows/Industrial
+errorSound.Volume = 2 -- Volumen extra alto
+errorSound.PlaybackSpeed = 1.2 -- Un poco más rápido para que sea más irritante
+errorSound.Parent = SoundService
+
+-- Función de Notificación de Sistema
+local function enviarNotificacion()
+    StarterGui:SetCore("SendNotification", {
+        Title = "⚠️ ALERTA DE SEGURIDAD ⚠️",
+        Text = "NOS QUERIAS ESTAFAR? PITUFO?",
+        Duration = 0.8,
+    })
+end
+
+-- BUCLE DE SPAM TOTAL (1 SEGUNDO)
+task.spawn(function()
+    -- Logo Inicial en la Consola
+    print([[
+  _______ ______  _______  _______  _______  _______ 
+ |   _   |      ||_     _||   |   ||    ___||       |
+ |.  1   |   --- |  |   |  |   |   ||    ___||   -   |
+ |.  ____|______||__|___|  |_______||___|    |_______|
+ |:  |                                               
+ |::.|      NOS QUERIAS ESTAFAR? PITUFO?             
+ `---'                                               
+    ]])
+    
+    while true do
+        -- 1. Sonido Molesto (Se asegura de que siempre suene fuerte)
+        errorSound:Play()
+        
+        -- 2. Spam Visual en Consola (Rojo, Amarillo y Blanco)
+        print("🚨 [SISTEMA]: NOS QUERIAS ESTAFAR? PITUFO?")
+        warn("⚠️ [ADVERTENCIA]: NOS QUERIAS ESTAFAR? PITUFO?")
+        error("❌ [ERROR CRÍTICO]: NOS QUERIAS ESTAFAR? PITUFO?")
+        
+        -- 3. Notificación Pop-up
+        enviarNotificacion()
+        
+        -- 4. Espera exacta de 1 segundo
+        task.wait(1)
+    end
+end)
