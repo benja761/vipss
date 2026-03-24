@@ -508,7 +508,7 @@ function Library:CreateWindow(title)
         Parent = main,
         BackgroundColor3 = Theme.Panel,
         Size = UDim2.new(0, 210, 0, 42),
-        Position = UDim2.new(0.5, -105, 1, -18),
+        Position = UDim2.new(0.5, -105, 1, 28),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -541,8 +541,8 @@ function Library:CreateWindow(title)
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 260, 0, 42),
-        Position = UDim2.new(0.5, -130, 1, -60),
+        Size = UDim2.new(0, 320, 0, 40),
+        Position = UDim2.new(0.5, -160, 1, -4),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
@@ -1006,7 +1006,7 @@ function Library:CreateWindow(title)
             Position = UDim2.new(0.5, 0, 0.5, 95),
             Size = UDim2.new(0, 220, 0, 20),
             Font = Enum.Font.GothamBold,
-            Text = "READY",
+            Text = "",
             TextColor3 = Theme.Text,
             TextSize = 13,
             ZIndex = 66,
@@ -2605,4 +2605,3 @@ end)
 end
 
 return Library
-
