@@ -1,3 +1,4 @@
+
 --!strict
 -- Lotus X - Premium Visual UI Mockup
 -- Visual-only interface. No exploit / cheat / ESP / aim / teleport logic.
@@ -11,7 +12,6 @@ local Lighting = game:GetService("Lighting")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- cleanup
 local old = PlayerGui:FindFirstChild("LotusX_UI")
 if old then
 	old:Destroy()
@@ -23,7 +23,6 @@ gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = PlayerGui
 
--- theme
 local Theme = {
 	BG = Color3.fromRGB(10, 10, 12),
 	BG2 = Color3.fromRGB(16, 16, 20),
@@ -43,8 +42,7 @@ local UIScaleRoot = Instance.new("UIScale")
 UIScaleRoot.Scale = 1
 UIScaleRoot.Parent = gui
 
--- blur
-local blur = Lighting:FindFirstChild("LotusX_Blur") :: BlurEffect?
+local blur = Lighting:FindFirstChild("LotusX_Blur")
 if not blur then
 	blur = Instance.new("BlurEffect")
 	blur.Name = "LotusX_Blur"
@@ -104,13 +102,6 @@ local function addList(parent: Instance, pad: number, sort: Enum.SortOrder?)
 	return list
 end
 
-local function addAspect(parent: Instance, ratio: number)
-	local a = Instance.new("UIAspectRatioConstraint")
-	a.AspectRatio = ratio
-	a.Parent = parent
-	return a
-end
-
 local function addTextureOverlay(parent: Instance, image: string, transparency: number)
 	local tex = Instance.new("ImageLabel")
 	tex.Name = "Texture"
@@ -125,7 +116,6 @@ local function addTextureOverlay(parent: Instance, image: string, transparency: 
 	return tex
 end
 
--- main holder
 local root = Instance.new("Frame")
 root.Name = "Root"
 root.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -134,7 +124,6 @@ root.Size = UDim2.fromOffset(1130, 670)
 root.BackgroundTransparency = 1
 root.Parent = gui
 
--- shadow/glow
 local glow = Instance.new("ImageLabel")
 glow.Name = "Glow"
 glow.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -170,7 +159,6 @@ innerLine.Parent = main
 makeCorner(innerLine, 13)
 makeStroke(innerLine, Color3.fromRGB(70, 20, 24), 1, 0.35)
 
--- header
 local header = Instance.new("Frame")
 header.Name = "Header"
 header.Size = UDim2.new(1, -20, 0, 70)
@@ -211,13 +199,12 @@ version.Parent = header
 
 local topAccent = Instance.new("Frame")
 topAccent.Size = UDim2.new(1, 0, 0, 2)
-topAccent.Position = UDim2.fromOffset(0, header.AbsoluteSize.Y - 2)
+topAccent.Position = UDim2.new(0, 0, 1, -2)
 topAccent.BackgroundColor3 = Theme.Accent
 topAccent.BorderSizePixel = 0
 topAccent.ZIndex = 9
 topAccent.Parent = header
 
--- search
 local searchBar = Instance.new("Frame")
 searchBar.Name = "SearchBar"
 searchBar.Size = UDim2.new(0, 300, 0, 36)
@@ -255,7 +242,6 @@ searchBox.ClearTextOnFocus = false
 searchBox.ZIndex = 10
 searchBox.Parent = searchBar
 
--- content
 local content = Instance.new("Frame")
 content.Name = "Content"
 content.BackgroundTransparency = 1
@@ -264,14 +250,12 @@ content.Size = UDim2.new(1, -20, 1, -150)
 content.ZIndex = 6
 content.Parent = main
 
--- left/main area
 local pagesHolder = Instance.new("Frame")
 pagesHolder.Name = "PagesHolder"
 pagesHolder.BackgroundTransparency = 1
 pagesHolder.Size = UDim2.new(1, -270, 1, 0)
 pagesHolder.Parent = content
 
--- right preview
 local previewCard = Instance.new("Frame")
 previewCard.Name = "PreviewCard"
 previewCard.AnchorPoint = Vector2.new(1, 0)
@@ -331,8 +315,7 @@ previewStats.Position = UDim2.fromOffset(14, 308)
 previewStats.Size = UDim2.new(1, -28, 1, -320)
 previewStats.ZIndex = 8
 previewStats.Parent = previewCard
-
-local previewList = addList(previewStats, 8)
+addList(previewStats, 8)
 
 local function createStatRow(labelText: string, valueText: string)
 	local row = Instance.new("Frame")
@@ -368,6 +351,7 @@ local function createStatRow(labelText: string, valueText: string)
 	v.TextColor3 = Theme.Text
 	v.ZIndex = 9
 	v.Parent = row
+
 	return row
 end
 
@@ -376,7 +360,6 @@ createStatRow("Theme", "Red Carbon")
 createStatRow("Layout", "Dual Column")
 createStatRow("Status", "Loaded")
 
--- bottom tabs holder
 local bottomHolder = Instance.new("Frame")
 bottomHolder.Name = "BottomHolder"
 bottomHolder.AnchorPoint = Vector2.new(0.5, 1)
@@ -387,8 +370,8 @@ bottomHolder.Parent = root
 
 local tabsBar = Instance.new("Frame")
 tabsBar.AnchorPoint = Vector2.new(0.5, 0.5)
-tabsBar.Position = UDim2.fromScale(0.37, 0.5)
-tabsBar.Size = UDim2.fromOffset(510, 44)
+tabsBar.Position = UDim2.new(0.33, 0, 0.5, 0)
+tabsBar.Size = UDim2.fromOffset(650, 46)
 tabsBar.BackgroundColor3 = Theme.BG2
 tabsBar.ZIndex = 10
 tabsBar.Parent = bottomHolder
@@ -399,7 +382,7 @@ addTextureOverlay(tabsBar, "rbxassetid://9968344105", 0.95)
 local subTabsBar = Instance.new("Frame")
 subTabsBar.AnchorPoint = Vector2.new(1, 0.5)
 subTabsBar.Position = UDim2.new(1, -8, 0.5, 0)
-subTabsBar.Size = UDim2.fromOffset(315, 44)
+subTabsBar.Size = UDim2.fromOffset(330, 46)
 subTabsBar.BackgroundColor3 = Theme.BG2
 subTabsBar.ZIndex = 10
 subTabsBar.Parent = bottomHolder
@@ -421,10 +404,11 @@ subTabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 subTabsLayout.Padding = UDim.new(0, 6)
 subTabsLayout.Parent = subTabsBar
 
-local pages: {[string]: Frame} = {}
-local pageButtons: {[string]: TextButton} = {}
-local subTabButtons: {[string]: TextButton} = {}
-local allSearchTargets: {TextLabel | TextButton | TextBox} = {}
+local pages = {}
+local pageButtons = {}
+local subTabButtons = {}
+local allSearchTargets = {}
+local liveAccentObjects = {}
 
 local currentPage = "Main"
 local currentSub = "Overview"
@@ -433,6 +417,36 @@ local menuOpen = true
 local function registerSearchTarget(obj)
 	table.insert(allSearchTargets, obj)
 end
+
+local function registerAccentObject(obj: Instance, prop: string)
+	table.insert(liveAccentObjects, {Obj = obj, Prop = prop})
+end
+
+local function setAccentColor(color: Color3)
+	Theme.Accent = color
+	Theme.Accent2 = Color3.fromRGB(
+		math.max(0, math.floor(color.R * 255) - 55),
+		math.max(0, math.floor(color.G * 255) - 55),
+		math.max(0, math.floor(color.B * 255) - 55)
+	)
+
+	for _, item in ipairs(liveAccentObjects) do
+		local obj = item.Obj
+		local prop = item.Prop
+		if obj and obj.Parent then
+			pcall(function()
+				obj[prop] = color
+			end)
+		end
+	end
+
+	pcall(function()
+		glow.ImageColor3 = color
+	end)
+end
+
+registerAccentObject(topAccent, "BackgroundColor3")
+registerAccentObject(glow, "ImageColor3")
 
 local function makePage(name: string)
 	local page = Instance.new("Frame")
@@ -534,6 +548,7 @@ local function createToggle(parent: Instance, text: string, default: boolean)
 	pill.ZIndex = 9
 	pill.Parent = button
 	makeCorner(pill, 11)
+	registerAccentObject(pill, "BackgroundColor3")
 
 	local knob = Instance.new("Frame")
 	knob.Size = UDim2.fromOffset(16, 16)
@@ -571,6 +586,7 @@ local function createButton(parent: Instance, text: string)
 	makeCorner(button, 9)
 	makeStroke(button, Color3.fromRGB(95, 22, 28), 1)
 	addGradient(button, Theme.Accent, Theme.Accent2, 90)
+	registerAccentObject(button, "BackgroundColor3")
 
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
@@ -642,7 +658,7 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 	fill.ZIndex = 10
 	fill.Parent = bar
 	makeCorner(fill, 4)
-	addGradient(fill, Theme.Accent, Theme.Accent2, 0)
+	registerAccentObject(fill, "BackgroundColor3")
 
 	local knob = Instance.new("Frame")
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -779,24 +795,292 @@ local function createLabel(parent: Instance, text: string)
 	return holder
 end
 
--- pages
+local function createColorPreset(parent: Instance, name: string, color: Color3)
+	local button = Instance.new("TextButton")
+	button.AutoButtonColor = false
+	button.Size = UDim2.new(1, 0, 0, 42)
+	button.BackgroundColor3 = Theme.Soft
+	button.Text = ""
+	button.ZIndex = 8
+	button.Parent = parent
+	makeCorner(button, 9)
+	makeStroke(button, Theme.Stroke, 1)
+
+	local swatch = Instance.new("Frame")
+	swatch.Position = UDim2.fromOffset(10, 9)
+	swatch.Size = UDim2.fromOffset(24, 24)
+	swatch.BackgroundColor3 = color
+	swatch.ZIndex = 9
+	swatch.Parent = button
+	makeCorner(swatch, 7)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(44, 0)
+	label.Size = UDim2.new(1, -56, 1, 0)
+	label.Font = Enum.Font.GothamMedium
+	label.Text = name
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 9
+	label.Parent = button
+
+	button.MouseButton1Click:Connect(function()
+		setAccentColor(color)
+		notify("Colors", "Accent changed to " .. name, 3)
+	end)
+
+	return button
+end
+
+local function createRGBSlider(parent: Instance, labelText: string, default: number, onChanged)
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1, 0, 0, 54)
+	holder.BackgroundColor3 = Theme.Soft
+	holder.ZIndex = 8
+	holder.Parent = parent
+	makeCorner(holder, 9)
+	makeStroke(holder, Theme.Stroke, 1)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(12, 5)
+	label.Size = UDim2.new(1, -70, 0, 18)
+	label.Font = Enum.Font.GothamMedium
+	label.Text = labelText
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 9
+	label.Parent = holder
+
+	local valueLabel = Instance.new("TextLabel")
+	valueLabel.BackgroundTransparency = 1
+	valueLabel.AnchorPoint = Vector2.new(1, 0)
+	valueLabel.Position = UDim2.new(1, -12, 0, 5)
+	valueLabel.Size = UDim2.fromOffset(40, 18)
+	valueLabel.Font = Enum.Font.GothamSemibold
+	valueLabel.Text = tostring(default)
+	valueLabel.TextSize = 12
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.TextColor3 = Theme.SubText
+	valueLabel.ZIndex = 9
+	valueLabel.Parent = holder
+
+	local bar = Instance.new("Frame")
+	bar.Position = UDim2.fromOffset(12, 31)
+	bar.Size = UDim2.new(1, -24, 0, 8)
+	bar.BackgroundColor3 = Color3.fromRGB(42, 42, 50)
+	bar.ZIndex = 9
+	bar.Parent = holder
+	makeCorner(bar, 4)
+
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new(default / 255, 0, 1, 0)
+	fill.BackgroundColor3 = Theme.Accent
+	fill.ZIndex = 10
+	fill.Parent = bar
+	makeCorner(fill, 4)
+	registerAccentObject(fill, "BackgroundColor3")
+
+	local knob = Instance.new("Frame")
+	knob.AnchorPoint = Vector2.new(0.5, 0.5)
+	knob.Position = UDim2.new(default / 255, 0, 0.5, 0)
+	knob.Size = UDim2.fromOffset(14, 14)
+	knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	knob.ZIndex = 11
+	knob.Parent = bar
+	makeCorner(knob, 7)
+
+	local dragging = false
+	local current = default
+
+	local function updateFromX(x: number)
+		local alpha = math.clamp((x - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+		current = math.floor(alpha * 255 + 0.5)
+		fill.Size = UDim2.new(alpha, 0, 1, 0)
+		knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+		valueLabel.Text = tostring(current)
+		onChanged(current)
+	end
+
+	bar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			updateFromX(UserInputService:GetMouseLocation().X)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			updateFromX(UserInputService:GetMouseLocation().X)
+		end
+	end)
+
+	return holder
+end
+
+local function createColorPreview(parent: Instance, titleText: string)
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1, 0, 0, 86)
+	holder.BackgroundColor3 = Theme.Soft
+	holder.ZIndex = 8
+	holder.Parent = parent
+	makeCorner(holder, 10)
+	makeStroke(holder, Theme.Stroke, 1)
+
+	local titlePreview = Instance.new("TextLabel")
+	titlePreview.BackgroundTransparency = 1
+	titlePreview.Position = UDim2.fromOffset(12, 8)
+	titlePreview.Size = UDim2.new(1, -24, 0, 18)
+	titlePreview.Font = Enum.Font.GothamBold
+	titlePreview.Text = titleText
+	titlePreview.TextSize = 13
+	titlePreview.TextXAlignment = Enum.TextXAlignment.Left
+	titlePreview.TextColor3 = Theme.Text
+	titlePreview.ZIndex = 9
+	titlePreview.Parent = holder
+
+	local preview = Instance.new("Frame")
+	preview.Position = UDim2.fromOffset(12, 34)
+	preview.Size = UDim2.new(1, -24, 0, 38)
+	preview.BackgroundColor3 = Theme.Accent
+	preview.ZIndex = 9
+	preview.Parent = holder
+	makeCorner(preview, 8)
+	registerAccentObject(preview, "BackgroundColor3")
+
+	return holder
+end
+
+local function makeTabButton(parent: Instance, text: string, width: number, onClick)
+	local btn = Instance.new("TextButton")
+	btn.AutoButtonColor = false
+	btn.Size = UDim2.fromOffset(width, 32)
+	btn.BackgroundColor3 = Theme.Soft
+	btn.Text = ""
+	btn.ZIndex = 11
+	btn.Parent = parent
+	makeCorner(btn, 9)
+	makeStroke(btn, Theme.Stroke, 1)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.BackgroundTransparency = 1
+	lbl.Size = UDim2.fromScale(1,1)
+	lbl.Font = Enum.Font.GothamSemibold
+	lbl.Text = text
+	lbl.TextSize = 13
+	lbl.TextColor3 = Theme.SubText
+	lbl.ZIndex = 12
+	lbl.Parent = btn
+
+	btn.MouseEnter:Connect(function()
+		tween(btn, TweenInfo.new(0.14), {BackgroundColor3 = Color3.fromRGB(38,38,46)})
+	end)
+	btn.MouseLeave:Connect(function()
+		if currentPage ~= text and currentSub ~= text then
+			tween(btn, TweenInfo.new(0.14), {BackgroundColor3 = Theme.Soft})
+		end
+	end)
+	btn.MouseButton1Click:Connect(onClick)
+
+	return btn
+end
+
+local function updatePageButtonState()
+	for name, btn in pairs(pageButtons) do
+		local active = name == currentPage
+		local lbl = btn:FindFirstChildOfClass("TextLabel")
+		tween(btn, TweenInfo.new(0.15), {
+			BackgroundColor3 = active and Theme.Accent2 or Theme.Soft
+		})
+		if lbl then
+			tween(lbl, TweenInfo.new(0.15), {
+				TextColor3 = active and Theme.Text or Theme.SubText
+			})
+		end
+	end
+end
+
+local function updateSubButtonState()
+	for name, btn in pairs(subTabButtons) do
+		local active = name == currentSub
+		local lbl = btn:FindFirstChildOfClass("TextLabel")
+		tween(btn, TweenInfo.new(0.15), {
+			BackgroundColor3 = active and Theme.Accent2 or Theme.Soft
+		})
+		if lbl then
+			tween(lbl, TweenInfo.new(0.15), {
+				TextColor3 = active and Theme.Text or Theme.SubText
+			})
+		end
+	end
+end
+
+local subTabsByPage = {
+	Main = {"Overview", "Panels", "Layout"},
+	Visuals = {"Style", "Preview", "Effects"},
+	Player = {"Profile", "Card", "Scale"},
+	Settings = {"Preferences", "System", "Interface"},
+	Colors = {"Presets", "Custom RGB", "Live Preview"},
+}
+
+local function rebuildSubTabs(pageName: string)
+	for _, child in ipairs(subTabsBar:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	table.clear(subTabButtons)
+
+	local list = subTabsByPage[pageName] or {"Overview"}
+	currentSub = list[1]
+
+	for _, name in ipairs(list) do
+		local b = makeTabButton(subTabsBar, name, 98, function()
+			currentSub = name
+			updateSubButtonState()
+		end)
+		subTabButtons[name] = b
+	end
+
+	updateSubButtonState()
+end
+
+local function showPage(name: string)
+	currentPage = name
+	for pageName, page in pairs(pages) do
+		page.Visible = pageName == name
+	end
+	rebuildSubTabs(name)
+	updatePageButtonState()
+end
+
 local mainPage = makePage("Main")
 local visualsPage = makePage("Visuals")
 local playerPage = makePage("Player")
 local settingsPage = makePage("Settings")
+local colorsPage = makePage("Colors")
 
-local function buildDualPage(page: Frame, leftTitle: string, rightTitle: string, entriesLeft: {(Instance)->()}, entriesRight: {(Instance)->()})
-	local leftSection, leftContent = makeSection(page, leftTitle, UDim2.new(0.5, -6, 1, 0), UDim2.new(0,0,0,0))
-	local rightSection, rightContent = makeSection(page, rightTitle, UDim2.new(0.5, -6, 1, 0), UDim2.new(0.5, 6, 0, 0))
+local function buildDualPage(page: Frame, leftTitle: string, rightTitle: string, entriesLeft, entriesRight)
+	local _, leftContent = makeSection(page, leftTitle, UDim2.new(0.5, -8, 1, 0), UDim2.new(0, 0, 0, 0))
+	local _, rightContent = makeSection(page, rightTitle, UDim2.new(0.5, -8, 1, 0), UDim2.new(0.5, 8, 0, 0))
 
 	for _, fn in ipairs(entriesLeft) do
 		fn(leftContent)
 	end
+
 	for _, fn in ipairs(entriesRight) do
 		fn(rightContent)
 	end
-
-	return leftSection, rightSection
 end
 
 buildDualPage(
@@ -887,120 +1171,49 @@ buildDualPage(
 	}
 )
 
--- tab creation
-local function makeTabButton(parent: Instance, text: string, width: number, onClick: ()->())
-	local btn = Instance.new("TextButton")
-	btn.AutoButtonColor = false
-	btn.Size = UDim2.fromOffset(width, 32)
-	btn.BackgroundColor3 = Theme.Soft
-	btn.Text = ""
-	btn.ZIndex = 11
-	btn.Parent = parent
-	makeCorner(btn, 9)
-	makeStroke(btn, Theme.Stroke, 1)
-
-	local lbl = Instance.new("TextLabel")
-	lbl.BackgroundTransparency = 1
-	lbl.Size = UDim2.fromScale(1,1)
-	lbl.Font = Enum.Font.GothamSemibold
-	lbl.Text = text
-	lbl.TextSize = 13
-	lbl.TextColor3 = Theme.SubText
-	lbl.ZIndex = 12
-	lbl.Parent = btn
-
-	btn.MouseEnter:Connect(function()
-		tween(btn, TweenInfo.new(0.14), {BackgroundColor3 = Color3.fromRGB(38,38,46)})
-	end)
-	btn.MouseLeave:Connect(function()
-		if currentPage ~= text and currentSub ~= text then
-			tween(btn, TweenInfo.new(0.14), {BackgroundColor3 = Theme.Soft})
-		end
-	end)
-	btn.MouseButton1Click:Connect(onClick)
-
-	return btn, lbl
-end
-
-local function updatePageButtonState()
-	for name, btn in pairs(pageButtons) do
-		local active = name == currentPage
-		local lbl = btn:FindFirstChildOfClass("TextLabel")
-		tween(btn, TweenInfo.new(0.15), {
-			BackgroundColor3 = active and Theme.Accent2 or Theme.Soft
-		})
-		if lbl then
-			tween(lbl, TweenInfo.new(0.15), {
-				TextColor3 = active and Theme.Text or Theme.SubText
-			})
-		end
-	end
-end
-
-local function updateSubButtonState()
-	for name, btn in pairs(subTabButtons) do
-		local active = name == currentSub
-		local lbl = btn:FindFirstChildOfClass("TextLabel")
-		tween(btn, TweenInfo.new(0.15), {
-			BackgroundColor3 = active and Theme.Accent2 or Theme.Soft
-		})
-		if lbl then
-			tween(lbl, TweenInfo.new(0.15), {
-				TextColor3 = active and Theme.Text or Theme.SubText
-			})
-		end
-	end
-end
-
-local function showPage(name: string)
-	currentPage = name
-	for pageName, page in pairs(pages) do
-		page.Visible = pageName == name
-	end
-	updatePageButtonState()
-end
-
-local defaultSubTabs = {"Overview", "Panels", "Style"}
-
-local function rebuildSubTabs()
-	for _, child in ipairs(subTabsBar:GetChildren()) do
-		if child:IsA("TextButton") then
-			child:Destroy()
-		end
-	end
-	table.clear(subTabButtons)
-
-	for _, name in ipairs(defaultSubTabs) do
-		local b = makeTabButton(subTabsBar, name, 96, function()
-			currentSub = name
-			updateSubButtonState()
-		end)
-		subTabButtons[name] = b
-	end
-	updateSubButtonState()
-end
-
-pageButtons["Main"] = makeTabButton(tabsBar, "Main", 112, function() showPage("Main") end)
-pageButtons["Visuals"] = makeTabButton(tabsBar, "Visuals", 112, function() showPage("Visuals") end)
-pageButtons["Player"] = makeTabButton(tabsBar, "Player", 112, function() showPage("Player") end)
-pageButtons["Settings"] = makeTabButton(tabsBar, "Settings", 112, function() showPage("Settings") end)
-
-rebuildSubTabs()
-showPage("Main")
-
--- notifications
-local notifHolder = Instance.new("Frame")
-notifHolder.Name = "Notifications"
-notifHolder.AnchorPoint = Vector2.new(1, 1)
-notifHolder.Position = UDim2.new(1, -18, 1, -78)
-notifHolder.Size = UDim2.fromOffset(320, 240)
-notifHolder.BackgroundTransparency = 1
-notifHolder.ZIndex = 30
-notifHolder.Parent = gui
-
-local notifLayout = addList(notifHolder, 8)
-notifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
-notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+local colorR, colorG, colorB = 186, 30, 40
+buildDualPage(
+	colorsPage,
+	"Color Presets",
+	"Custom Theme Editor",
+	{
+		function(p) createLabel(p, "Choose a premium accent preset for Lotus X.") end,
+		function(p) createColorPreset(p, "Lotus Red", Color3.fromRGB(186, 30, 40)) end,
+		function(p) createColorPreset(p, "Ruby Night", Color3.fromRGB(155, 25, 55)) end,
+		function(p) createColorPreset(p, "Crimson Steel", Color3.fromRGB(200, 45, 45)) end,
+		function(p) createColorPreset(p, "Violet Pulse", Color3.fromRGB(140, 70, 200)) end,
+		function(p) createColorPreset(p, "Ocean Blue", Color3.fromRGB(45, 110, 220)) end,
+		function(p) createColorPreset(p, "Emerald Luxe", Color3.fromRGB(40, 180, 120)) end,
+	},
+	{
+		function(p) createColorPreview(p, "Live Accent Preview") end,
+		function(p)
+			createRGBSlider(p, "Red", colorR, function(v)
+				colorR = v
+				setAccentColor(Color3.fromRGB(colorR, colorG, colorB))
+			end)
+		end,
+		function(p)
+			createRGBSlider(p, "Green", colorG, function(v)
+				colorG = v
+				setAccentColor(Color3.fromRGB(colorR, colorG, colorB))
+			end)
+		end,
+		function(p)
+			createRGBSlider(p, "Blue", colorB, function(v)
+				colorB = v
+				setAccentColor(Color3.fromRGB(colorR, colorG, colorB))
+			end)
+		end,
+		function(p)
+			local btn = createButton(p, "Apply Custom Accent")
+			btn.MouseButton1Click:Connect(function()
+				setAccentColor(Color3.fromRGB(colorR, colorG, colorB))
+				notify("Colors", "Custom accent applied.", 3)
+			end)
+		end,
+	}
+)
 
 local function notify(titleText: string, bodyText: string, duration: number?)
 	duration = duration or 4
@@ -1022,6 +1235,7 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	accent.BorderSizePixel = 0
 	accent.ZIndex = 32
 	accent.Parent = card
+	registerAccentObject(accent, "BackgroundColor3")
 
 	local titleN = Instance.new("TextLabel")
 	titleN.BackgroundTransparency = 1
@@ -1069,7 +1283,35 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	end)
 end
 
--- preview character clone
+local mainTabs = {
+	{ Name = "Main", Width = 120 },
+	{ Name = "Visuals", Width = 120 },
+	{ Name = "Player", Width = 120 },
+	{ Name = "Settings", Width = 120 },
+	{ Name = "Colors", Width = 120 },
+}
+
+for _, info in ipairs(mainTabs) do
+	pageButtons[info.Name] = makeTabButton(tabsBar, info.Name, info.Width, function()
+		showPage(info.Name)
+	end)
+end
+
+local notifHolder = Instance.new("Frame")
+notifHolder.Name = "Notifications"
+notifHolder.AnchorPoint = Vector2.new(1, 1)
+notifHolder.Position = UDim2.new(1, -18, 1, -78)
+notifHolder.Size = UDim2.fromOffset(320, 240)
+notifHolder.BackgroundTransparency = 1
+notifHolder.ZIndex = 30
+notifHolder.Parent = gui
+
+local notifLayout = addList(notifHolder, 8)
+notifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+
+showPage("Main")
+
 local function buildPreviewCharacter()
 	local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 	local previewModel = Instance.new("Model")
@@ -1101,7 +1343,6 @@ end
 
 pcall(buildPreviewCharacter)
 
--- dragging
 local dragging = false
 local dragStart = Vector2.zero
 local startPos = UDim2.new()
@@ -1130,7 +1371,6 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- search filtering
 local function applySearch(query: string)
 	query = string.lower(query)
 
@@ -1154,7 +1394,6 @@ searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	applySearch(searchBox.Text)
 end)
 
--- open / close
 local function setOpen(state: boolean)
 	menuOpen = state
 	tween(UIScaleRoot, TweenInfo.new(0.18), {Scale = state and 1 or 0.96})
@@ -1178,7 +1417,6 @@ end
 
 UserInputService.InputBegan:Connect(function(input, gp)
 	if gp then return end
-
 	if input.KeyCode == Enum.KeyCode.RightShift then
 		if not menuOpen then
 			main.Visible = true
@@ -1187,10 +1425,8 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	end
 end)
 
--- startup animation
-main.Size = UDim2.new(1, 0, 1, -70)
 main.Visible = true
-tabsBar.Position = UDim2.fromScale(0.37, 1.6)
+tabsBar.Position = UDim2.new(0.33, 0, 1.6, 0)
 subTabsBar.Position = UDim2.new(1, -8, 1.6, 0)
 header.Position = UDim2.fromOffset(10, -80)
 previewCard.Position = UDim2.new(1, 280, 0, 0)
@@ -1198,14 +1434,13 @@ blur.Size = 0
 
 tween(header, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(10, 10)})
 tween(previewCard, TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, 0, 0, 0)})
-tween(tabsBar, TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromScale(0.37, 0.5)})
+tween(tabsBar, TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(0.33, 0, 0.5, 0)})
 tween(subTabsBar, TweenInfo.new(0.36, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -8, 0.5, 0)})
 tween(blur, TweenInfo.new(0.3), {Size = 14})
 
 notify("Lotus X", "Premium visual interface loaded.", 4)
 notify("Hint", "Press RightShift to show or hide the menu.", 5)
 
--- soft accent pulse
 task.spawn(function()
 	while gui.Parent do
 		local g = math.sin(os.clock() * 1.8) * 0.06 + 0.16
