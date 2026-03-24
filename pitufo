@@ -1,100 +1,1215 @@
--- PITUFO WX7: MODO APOCALIPSIS (CONGELAMIENTO & RENDER OVERLOAD)
--- ADVERTENCIA: Al ejecutar esto, Roblox se quedará "No responde" y parpadeará violentamente.
+--!strict
+-- Lotus X - Premium Visual UI Mockup
+-- Visual-only interface. No exploit / cheat / ESP / aim / teleport logic.
 
-repeat task.wait() until game:IsLoaded()
-
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
-local HttpService = game:GetService("HttpService")
-local parent = (gethui and gethui()) or game:GetService("CoreGui")
 
--- 1. SOBRECARGA DE HILOS (CPU KILLER - SIN ESPERAS)
--- Este bucle bloquea el procesador al 100% al instante.
-task.spawn(function()
-    while true do
-        for i = 1, 1000000 do 
-            local _ = math.sin(i) * math.acos(math.random()) -- Cálculos basura masivos
-        end
-        -- NO HAY TASK.WAIT(). EL HILO ESTÁ MUERTO AQUÍ.
-    end
-end)
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
--- 2. GENERADOR MASIVO DE OBJETOS RGB (RAM & GPU CRASHER)
--- Crea miles de interfaces cada segundo para saturar la memoria y el renderizado
-task.spawn(function()
-    local gui = Instance.new("ScreenGui", parent)
-    gui.Name = "PITUFO_SYSTEM_OVERRIDE"
-    gui.IgnoreGuiInset = true
-    gui.DisplayOrder = 1000000
-    
-    while true do
-        for i = 1, 1000 do -- Mil objetos por ciclo
-            local f = Instance.new("Frame", gui)
-            f.Size = UDim2.new(math.random(), 0, math.random(), 0)
-            f.Position = UDim2.new(math.random(), 0, math.random(), 0)
-            -- RGB NIVEL DIOS ESTALLANDO
-            f.BackgroundColor3 = Color3.fromHSV(tick() * 10 % 1, 1, 1) 
-            f.BorderSizePixel = 0
-            
-            local t = Instance.new("TextLabel", f)
-            t.Size = UDim2.new(1, 0, 1, 0)
-            t.Text = "¿ME QUERIAS ESTAFAR PITUFO?"
-            t.TextScaled = true
-            t.BackgroundTransparency = 1
-            t.TextColor3 = Color3.new(1,1,1)
-            t.Font = Enum.Font.Code -- Fuente Hacker
-            
-            -- Ciclo de creación y destrucción ultra rápido para saturar CPU
-            task.delay(0.01, function() f:Destroy() end)
-        end
-        task.wait() -- Velocidad máxima de spam
-    end
-end)
-
--- 3. DISTORSIÓN DE ILUMINACIÓN EXTREMA (GLITCH VISUAL)
-task.spawn(function()
-    while true do
-        Lighting.Brightness = math.random(0, 9999)
-        Lighting.ClockTime = math.random(0, 24)
-        Lighting.ExposureCompensation = math.random(-20, 20)
-        -- Parpadeo ambiental RGB
-        Lighting.Ambient = Color3.fromHSV(tick() * 5 % 1, 1, 1)
-        task.wait() -- Máxima velocidad
-    end
-end)
-
--- 4. MENSAJE FINAL HACKER OVERLAY
-local overlay = Instance.new("ScreenGui", parent)
-overlay.IgnoreGuiInset = true
-overlay.DisplayOrder = 9999999
-
-local label = Instance.new("TextLabel", overlay)
-label.Size = UDim2.new(1, 0, 1, 0)
-label.BackgroundColor3 = Color3.new(0, 0, 0)
-label.BackgroundTransparency = 0.1
-label.Text = "SYSTEM FAILURE\n¿ME QUERIAS ESTAFAR PITUFO?\n\nOWNED BY WX7"
-label.TextColor3 = Color3.new(1, 0, 0)
-label.TextScaled = true
-label.Font = Enum.Font.Code -- Fuente Hacker
-label.ZIndex = 9999999
-
--- Parpadeo de Texto y Rotación Violenta
-RunService.RenderStepped:Connect(function()
-    -- RGB Estallando en el texto principal
-    label.TextColor3 = Color3.fromHSV(tick() * 20 % 1, 1, 1)
-    -- Rotación caótica para marear
-    label.Rotation = math.sin(tick() * 50) * 10
-end)
-
--- 5. CACOFONÍA DE AUDIO (MÁXIMA SATURACIÓN)
--- Reproduce múltiples alarmas simultáneamente para saturar el audio
-for i = 1, 15 do
-    local s = Instance.new("Sound", workspace)
-    s.SoundId = "rbxassetid://4612375231" -- Alarma de error industrial
-    s.Volume = 10
-    s.PlaybackSpeed = 0.1 + (i * 0.1) -- Varios tonos molestos
-    s.Looped = true
-    s:Play()
+-- cleanup
+local old = PlayerGui:FindFirstChild("LotusX_UI")
+if old then
+	old:Destroy()
 end
 
-print("PITUFO WX7: TOTAL OVERRIDE LOADED. ADIÓS AL SISTEMA.")
+local gui = Instance.new("ScreenGui")
+gui.Name = "LotusX_UI"
+gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PlayerGui
+
+-- theme
+local Theme = {
+	BG = Color3.fromRGB(10, 10, 12),
+	BG2 = Color3.fromRGB(16, 16, 20),
+	BG3 = Color3.fromRGB(22, 22, 28),
+	Stroke = Color3.fromRGB(45, 45, 55),
+	Soft = Color3.fromRGB(28, 28, 34),
+	Text = Color3.fromRGB(235, 235, 240),
+	SubText = Color3.fromRGB(155, 155, 170),
+	Accent = Color3.fromRGB(186, 30, 40),
+	Accent2 = Color3.fromRGB(130, 18, 26),
+	Green = Color3.fromRGB(60, 180, 110),
+	Yellow = Color3.fromRGB(235, 190, 70),
+	Red = Color3.fromRGB(220, 70, 70),
+}
+
+local UIScaleRoot = Instance.new("UIScale")
+UIScaleRoot.Scale = 1
+UIScaleRoot.Parent = gui
+
+-- blur
+local blur = Lighting:FindFirstChild("LotusX_Blur") :: BlurEffect?
+if not blur then
+	blur = Instance.new("BlurEffect")
+	blur.Name = "LotusX_Blur"
+	blur.Size = 0
+	blur.Parent = Lighting
+end
+
+local function tween(obj: Instance, info: TweenInfo, props: {[string]: any})
+	local tw = TweenService:Create(obj, info, props)
+	tw:Play()
+	return tw
+end
+
+local function makeCorner(obj: Instance, radius: number)
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, radius)
+	c.Parent = obj
+	return c
+end
+
+local function makeStroke(obj: Instance, color: Color3, thickness: number, transparency: number?)
+	local s = Instance.new("UIStroke")
+	s.Color = color
+	s.Thickness = thickness
+	s.Transparency = transparency or 0
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	s.Parent = obj
+	return s
+end
+
+local function makePadding(obj: Instance, l: number, r: number, t: number, b: number)
+	local p = Instance.new("UIPadding")
+	p.PaddingLeft = UDim.new(0, l)
+	p.PaddingRight = UDim.new(0, r)
+	p.PaddingTop = UDim.new(0, t)
+	p.PaddingBottom = UDim.new(0, b)
+	p.Parent = obj
+	return p
+end
+
+local function addGradient(obj: Instance, c1: Color3, c2: Color3, rot: number)
+	local g = Instance.new("UIGradient")
+	g.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, c1),
+		ColorSequenceKeypoint.new(1, c2),
+	})
+	g.Rotation = rot
+	g.Parent = obj
+	return g
+end
+
+local function addList(parent: Instance, pad: number, sort: Enum.SortOrder?)
+	local list = Instance.new("UIListLayout")
+	list.Padding = UDim.new(0, pad)
+	list.SortOrder = sort or Enum.SortOrder.LayoutOrder
+	list.Parent = parent
+	return list
+end
+
+local function addAspect(parent: Instance, ratio: number)
+	local a = Instance.new("UIAspectRatioConstraint")
+	a.AspectRatio = ratio
+	a.Parent = parent
+	return a
+end
+
+local function addTextureOverlay(parent: Instance, image: string, transparency: number)
+	local tex = Instance.new("ImageLabel")
+	tex.Name = "Texture"
+	tex.BackgroundTransparency = 1
+	tex.Size = UDim2.fromScale(1, 1)
+	tex.Image = image
+	tex.ImageTransparency = transparency
+	tex.ScaleType = Enum.ScaleType.Crop
+	tex.ZIndex = parent.ZIndex + 1
+	tex.Parent = parent
+	makeCorner(tex, 10)
+	return tex
+end
+
+-- main holder
+local root = Instance.new("Frame")
+root.Name = "Root"
+root.AnchorPoint = Vector2.new(0.5, 0.5)
+root.Position = UDim2.fromScale(0.5, 0.5)
+root.Size = UDim2.fromOffset(1130, 670)
+root.BackgroundTransparency = 1
+root.Parent = gui
+
+-- shadow/glow
+local glow = Instance.new("ImageLabel")
+glow.Name = "Glow"
+glow.AnchorPoint = Vector2.new(0.5, 0.5)
+glow.Position = UDim2.fromScale(0.5, 0.5)
+glow.Size = UDim2.new(1, 120, 1, 120)
+glow.BackgroundTransparency = 1
+glow.Image = "rbxassetid://5028857084"
+glow.ImageTransparency = 0.35
+glow.ScaleType = Enum.ScaleType.Slice
+glow.SliceCenter = Rect.new(24, 24, 276, 276)
+glow.ZIndex = 0
+glow.Parent = root
+glow.ImageColor3 = Theme.Accent
+
+local main = Instance.new("Frame")
+main.Name = "Main"
+main.Size = UDim2.new(1, 0, 1, -70)
+main.BackgroundColor3 = Theme.BG
+main.BorderSizePixel = 0
+main.ZIndex = 5
+main.Parent = root
+makeCorner(main, 14)
+makeStroke(main, Theme.Stroke, 1)
+addGradient(main, Theme.BG, Theme.BG2, 90)
+addTextureOverlay(main, "rbxassetid://9968344105", 0.93)
+
+local innerLine = Instance.new("Frame")
+innerLine.Size = UDim2.new(1, -2, 1, -2)
+innerLine.Position = UDim2.fromOffset(1, 1)
+innerLine.BackgroundTransparency = 1
+innerLine.ZIndex = 6
+innerLine.Parent = main
+makeCorner(innerLine, 13)
+makeStroke(innerLine, Color3.fromRGB(70, 20, 24), 1, 0.35)
+
+-- header
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, -20, 0, 70)
+header.Position = UDim2.fromOffset(10, 10)
+header.BackgroundColor3 = Theme.BG2
+header.BorderSizePixel = 0
+header.ZIndex = 7
+header.Parent = main
+makeCorner(header, 10)
+makeStroke(header, Theme.Stroke, 1)
+makePadding(header, 18, 18, 12, 12)
+addTextureOverlay(header, "rbxassetid://9968344105", 0.95)
+
+local title = Instance.new("TextLabel")
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(0.65, 0, 1, 0)
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Font = Enum.Font.GothamBold
+title.TextSize = 22
+title.RichText = true
+title.Text = "<font color='rgb(186,30,40)'>Lotus X</font>  |  Premium Interface"
+title.TextColor3 = Theme.Text
+title.ZIndex = 8
+title.Parent = header
+
+local version = Instance.new("TextLabel")
+version.BackgroundTransparency = 1
+version.AnchorPoint = Vector2.new(1, 0.5)
+version.Position = UDim2.new(1, -10, 0.5, 0)
+version.Size = UDim2.new(0, 120, 0, 30)
+version.TextXAlignment = Enum.TextXAlignment.Right
+version.Font = Enum.Font.GothamSemibold
+version.TextSize = 14
+version.Text = "v1.0.0"
+version.TextColor3 = Theme.SubText
+version.ZIndex = 8
+version.Parent = header
+
+local topAccent = Instance.new("Frame")
+topAccent.Size = UDim2.new(1, 0, 0, 2)
+topAccent.Position = UDim2.fromOffset(0, header.AbsoluteSize.Y - 2)
+topAccent.BackgroundColor3 = Theme.Accent
+topAccent.BorderSizePixel = 0
+topAccent.ZIndex = 9
+topAccent.Parent = header
+
+-- search
+local searchBar = Instance.new("Frame")
+searchBar.Name = "SearchBar"
+searchBar.Size = UDim2.new(0, 300, 0, 36)
+searchBar.AnchorPoint = Vector2.new(1, 0.5)
+searchBar.Position = UDim2.new(1, -150, 0.5, 0)
+searchBar.BackgroundColor3 = Theme.Soft
+searchBar.ZIndex = 9
+searchBar.Parent = header
+makeCorner(searchBar, 9)
+makeStroke(searchBar, Theme.Stroke, 1)
+
+local searchIcon = Instance.new("TextLabel")
+searchIcon.BackgroundTransparency = 1
+searchIcon.Size = UDim2.fromOffset(28, 36)
+searchIcon.Position = UDim2.fromOffset(8, 0)
+searchIcon.Text = "⌕"
+searchIcon.Font = Enum.Font.GothamBold
+searchIcon.TextSize = 18
+searchIcon.TextColor3 = Theme.SubText
+searchIcon.ZIndex = 10
+searchIcon.Parent = searchBar
+
+local searchBox = Instance.new("TextBox")
+searchBox.BackgroundTransparency = 1
+searchBox.Position = UDim2.fromOffset(36, 0)
+searchBox.Size = UDim2.new(1, -46, 1, 0)
+searchBox.PlaceholderText = "Search..."
+searchBox.Text = ""
+searchBox.Font = Enum.Font.Gotham
+searchBox.TextSize = 14
+searchBox.TextXAlignment = Enum.TextXAlignment.Left
+searchBox.PlaceholderColor3 = Theme.SubText
+searchBox.TextColor3 = Theme.Text
+searchBox.ClearTextOnFocus = false
+searchBox.ZIndex = 10
+searchBox.Parent = searchBar
+
+-- content
+local content = Instance.new("Frame")
+content.Name = "Content"
+content.BackgroundTransparency = 1
+content.Position = UDim2.fromOffset(10, 90)
+content.Size = UDim2.new(1, -20, 1, -150)
+content.ZIndex = 6
+content.Parent = main
+
+-- left/main area
+local pagesHolder = Instance.new("Frame")
+pagesHolder.Name = "PagesHolder"
+pagesHolder.BackgroundTransparency = 1
+pagesHolder.Size = UDim2.new(1, -270, 1, 0)
+pagesHolder.Parent = content
+
+-- right preview
+local previewCard = Instance.new("Frame")
+previewCard.Name = "PreviewCard"
+previewCard.AnchorPoint = Vector2.new(1, 0)
+previewCard.Position = UDim2.new(1, 0, 0, 0)
+previewCard.Size = UDim2.fromOffset(250, 440)
+previewCard.BackgroundColor3 = Theme.BG2
+previewCard.ZIndex = 7
+previewCard.Parent = content
+makeCorner(previewCard, 12)
+makeStroke(previewCard, Theme.Stroke, 1)
+addTextureOverlay(previewCard, "rbxassetid://9968344105", 0.94)
+
+local previewHeader = Instance.new("TextLabel")
+previewHeader.BackgroundTransparency = 1
+previewHeader.Position = UDim2.fromOffset(14, 12)
+previewHeader.Size = UDim2.new(1, -28, 0, 24)
+previewHeader.Font = Enum.Font.GothamBold
+previewHeader.Text = "Preview"
+previewHeader.TextSize = 16
+previewHeader.TextXAlignment = Enum.TextXAlignment.Left
+previewHeader.TextColor3 = Theme.Text
+previewHeader.ZIndex = 8
+previewHeader.Parent = previewCard
+
+local previewSub = Instance.new("TextLabel")
+previewSub.BackgroundTransparency = 1
+previewSub.Position = UDim2.fromOffset(14, 32)
+previewSub.Size = UDim2.new(1, -28, 0, 18)
+previewSub.Font = Enum.Font.Gotham
+previewSub.Text = "Visual demonstration panel"
+previewSub.TextSize = 12
+previewSub.TextXAlignment = Enum.TextXAlignment.Left
+previewSub.TextColor3 = Theme.SubText
+previewSub.ZIndex = 8
+previewSub.Parent = previewCard
+
+local viewportWrap = Instance.new("Frame")
+viewportWrap.BackgroundColor3 = Theme.Soft
+viewportWrap.Position = UDim2.fromOffset(14, 60)
+viewportWrap.Size = UDim2.new(1, -28, 0, 235)
+viewportWrap.ZIndex = 8
+viewportWrap.Parent = previewCard
+makeCorner(viewportWrap, 10)
+makeStroke(viewportWrap, Theme.Stroke, 1)
+
+local viewport = Instance.new("ViewportFrame")
+viewport.BackgroundTransparency = 1
+viewport.Size = UDim2.fromScale(1, 1)
+viewport.CurrentCamera = Instance.new("Camera")
+viewport.CurrentCamera.Parent = viewport
+viewport.ZIndex = 9
+viewport.Parent = viewportWrap
+
+local previewStats = Instance.new("Frame")
+previewStats.BackgroundTransparency = 1
+previewStats.Position = UDim2.fromOffset(14, 308)
+previewStats.Size = UDim2.new(1, -28, 1, -320)
+previewStats.ZIndex = 8
+previewStats.Parent = previewCard
+
+local previewList = addList(previewStats, 8)
+
+local function createStatRow(labelText: string, valueText: string)
+	local row = Instance.new("Frame")
+	row.Size = UDim2.new(1, 0, 0, 34)
+	row.BackgroundColor3 = Theme.Soft
+	row.BorderSizePixel = 0
+	row.ZIndex = 8
+	row.Parent = previewStats
+	makeCorner(row, 8)
+	makeStroke(row, Theme.Stroke, 1)
+
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.Position = UDim2.fromOffset(12, 0)
+	l.Size = UDim2.new(0.55, 0, 1, 0)
+	l.Font = Enum.Font.GothamMedium
+	l.Text = labelText
+	l.TextSize = 13
+	l.TextXAlignment = Enum.TextXAlignment.Left
+	l.TextColor3 = Theme.SubText
+	l.ZIndex = 9
+	l.Parent = row
+
+	local v = Instance.new("TextLabel")
+	v.BackgroundTransparency = 1
+	v.AnchorPoint = Vector2.new(1, 0)
+	v.Position = UDim2.new(1, -12, 0, 0)
+	v.Size = UDim2.new(0.4, 0, 1, 0)
+	v.Font = Enum.Font.GothamSemibold
+	v.Text = valueText
+	v.TextSize = 13
+	v.TextXAlignment = Enum.TextXAlignment.Right
+	v.TextColor3 = Theme.Text
+	v.ZIndex = 9
+	v.Parent = row
+	return row
+end
+
+createStatRow("Preset", "Premium")
+createStatRow("Theme", "Red Carbon")
+createStatRow("Layout", "Dual Column")
+createStatRow("Status", "Loaded")
+
+-- bottom tabs holder
+local bottomHolder = Instance.new("Frame")
+bottomHolder.Name = "BottomHolder"
+bottomHolder.AnchorPoint = Vector2.new(0.5, 1)
+bottomHolder.Position = UDim2.new(0.5, 0, 1, -8)
+bottomHolder.Size = UDim2.new(1, 0, 0, 54)
+bottomHolder.BackgroundTransparency = 1
+bottomHolder.Parent = root
+
+local tabsBar = Instance.new("Frame")
+tabsBar.AnchorPoint = Vector2.new(0.5, 0.5)
+tabsBar.Position = UDim2.fromScale(0.37, 0.5)
+tabsBar.Size = UDim2.fromOffset(510, 44)
+tabsBar.BackgroundColor3 = Theme.BG2
+tabsBar.ZIndex = 10
+tabsBar.Parent = bottomHolder
+makeCorner(tabsBar, 12)
+makeStroke(tabsBar, Theme.Stroke, 1)
+addTextureOverlay(tabsBar, "rbxassetid://9968344105", 0.95)
+
+local subTabsBar = Instance.new("Frame")
+subTabsBar.AnchorPoint = Vector2.new(1, 0.5)
+subTabsBar.Position = UDim2.new(1, -8, 0.5, 0)
+subTabsBar.Size = UDim2.fromOffset(315, 44)
+subTabsBar.BackgroundColor3 = Theme.BG2
+subTabsBar.ZIndex = 10
+subTabsBar.Parent = bottomHolder
+makeCorner(subTabsBar, 12)
+makeStroke(subTabsBar, Theme.Stroke, 1)
+addTextureOverlay(subTabsBar, "rbxassetid://9968344105", 0.95)
+
+local tabsLayout = Instance.new("UIListLayout")
+tabsLayout.FillDirection = Enum.FillDirection.Horizontal
+tabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+tabsLayout.Padding = UDim.new(0, 8)
+tabsLayout.Parent = tabsBar
+
+local subTabsLayout = Instance.new("UIListLayout")
+subTabsLayout.FillDirection = Enum.FillDirection.Horizontal
+subTabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+subTabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+subTabsLayout.Padding = UDim.new(0, 6)
+subTabsLayout.Parent = subTabsBar
+
+local pages: {[string]: Frame} = {}
+local pageButtons: {[string]: TextButton} = {}
+local subTabButtons: {[string]: TextButton} = {}
+local allSearchTargets: {TextLabel | TextButton | TextBox} = {}
+
+local currentPage = "Main"
+local currentSub = "Overview"
+local menuOpen = true
+
+local function registerSearchTarget(obj)
+	table.insert(allSearchTargets, obj)
+end
+
+local function makePage(name: string)
+	local page = Instance.new("Frame")
+	page.Name = name
+	page.BackgroundTransparency = 1
+	page.Size = UDim2.fromScale(1, 1)
+	page.Visible = false
+	page.Parent = pagesHolder
+	pages[name] = page
+	return page
+end
+
+local function makeSection(parent: Instance, titleText: string, size: UDim2, pos: UDim2)
+	local section = Instance.new("Frame")
+	section.BackgroundColor3 = Theme.BG2
+	section.BorderSizePixel = 0
+	section.Position = pos
+	section.Size = size
+	section.ZIndex = 7
+	section.Parent = parent
+	makeCorner(section, 12)
+	makeStroke(section, Theme.Stroke, 1)
+	addTextureOverlay(section, "rbxassetid://9968344105", 0.95)
+
+	local titleL = Instance.new("TextLabel")
+	titleL.BackgroundTransparency = 1
+	titleL.Position = UDim2.fromOffset(14, 10)
+	titleL.Size = UDim2.new(1, -28, 0, 24)
+	titleL.Font = Enum.Font.GothamBold
+	titleL.Text = titleText
+	titleL.TextSize = 15
+	titleL.TextXAlignment = Enum.TextXAlignment.Left
+	titleL.TextColor3 = Theme.Text
+	titleL.ZIndex = 8
+	titleL.Parent = section
+	registerSearchTarget(titleL)
+
+	local sub = Instance.new("TextLabel")
+	sub.BackgroundTransparency = 1
+	sub.Position = UDim2.fromOffset(14, 30)
+	sub.Size = UDim2.new(1, -28, 0, 18)
+	sub.Font = Enum.Font.Gotham
+	sub.Text = "Premium configuration panel"
+	sub.TextSize = 11
+	sub.TextXAlignment = Enum.TextXAlignment.Left
+	sub.TextColor3 = Theme.SubText
+	sub.ZIndex = 8
+	sub.Parent = section
+
+	local contentFrame = Instance.new("ScrollingFrame")
+	contentFrame.Name = "SectionContent"
+	contentFrame.BackgroundTransparency = 1
+	contentFrame.BorderSizePixel = 0
+	contentFrame.Position = UDim2.fromOffset(10, 56)
+	contentFrame.Size = UDim2.new(1, -20, 1, -66)
+	contentFrame.CanvasSize = UDim2.new()
+	contentFrame.ScrollBarThickness = 2
+	contentFrame.ScrollBarImageColor3 = Theme.Accent
+	contentFrame.ZIndex = 8
+	contentFrame.Parent = section
+
+	local list = addList(contentFrame, 8)
+	list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		contentFrame.CanvasSize = UDim2.fromOffset(0, list.AbsoluteContentSize.Y + 8)
+	end)
+
+	return section, contentFrame
+end
+
+local function createToggle(parent: Instance, text: string, default: boolean)
+	local button = Instance.new("TextButton")
+	button.AutoButtonColor = false
+	button.Size = UDim2.new(1, 0, 0, 40)
+	button.BackgroundColor3 = Theme.Soft
+	button.Text = ""
+	button.ZIndex = 8
+	button.Parent = parent
+	makeCorner(button, 9)
+	makeStroke(button, Theme.Stroke, 1)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(12, 0)
+	label.Size = UDim2.new(1, -70, 1, 0)
+	label.Font = Enum.Font.GothamMedium
+	label.Text = text
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 9
+	label.Parent = button
+	registerSearchTarget(label)
+
+	local pill = Instance.new("Frame")
+	pill.AnchorPoint = Vector2.new(1, 0.5)
+	pill.Position = UDim2.new(1, -10, 0.5, 0)
+	pill.Size = UDim2.fromOffset(42, 22)
+	pill.BackgroundColor3 = default and Theme.Accent or Color3.fromRGB(55,55,65)
+	pill.ZIndex = 9
+	pill.Parent = button
+	makeCorner(pill, 11)
+
+	local knob = Instance.new("Frame")
+	knob.Size = UDim2.fromOffset(16, 16)
+	knob.Position = default and UDim2.fromOffset(22, 3) or UDim2.fromOffset(3, 3)
+	knob.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	knob.ZIndex = 10
+	knob.Parent = pill
+	makeCorner(knob, 8)
+
+	local state = default
+	button.MouseEnter:Connect(function()
+		tween(button, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(34,34,42)})
+	end)
+	button.MouseLeave:Connect(function()
+		tween(button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Soft})
+	end)
+
+	button.MouseButton1Click:Connect(function()
+		state = not state
+		tween(pill, TweenInfo.new(0.18), {BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(55,55,65)})
+		tween(knob, TweenInfo.new(0.18), {Position = state and UDim2.fromOffset(22,3) or UDim2.fromOffset(3,3)})
+	end)
+
+	return button
+end
+
+local function createButton(parent: Instance, text: string)
+	local button = Instance.new("TextButton")
+	button.AutoButtonColor = false
+	button.Size = UDim2.new(1, 0, 0, 40)
+	button.BackgroundColor3 = Theme.Accent2
+	button.Text = ""
+	button.ZIndex = 8
+	button.Parent = parent
+	makeCorner(button, 9)
+	makeStroke(button, Color3.fromRGB(95, 22, 28), 1)
+	addGradient(button, Theme.Accent, Theme.Accent2, 90)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1,1)
+	label.Font = Enum.Font.GothamBold
+	label.Text = text
+	label.TextSize = 13
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 9
+	label.Parent = button
+	registerSearchTarget(label)
+
+	button.MouseEnter:Connect(function()
+		tween(button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Accent})
+	end)
+	button.MouseLeave:Connect(function()
+		tween(button, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Accent2})
+	end)
+
+	return button
+end
+
+local function createSlider(parent: Instance, text: string, min: number, max: number, default: number)
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1, 0, 0, 52)
+	holder.BackgroundColor3 = Theme.Soft
+	holder.ZIndex = 8
+	holder.Parent = parent
+	makeCorner(holder, 9)
+	makeStroke(holder, Theme.Stroke, 1)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(12, 6)
+	label.Size = UDim2.new(1, -80, 0, 18)
+	label.Font = Enum.Font.GothamMedium
+	label.Text = text
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 9
+	label.Parent = holder
+	registerSearchTarget(label)
+
+	local valueLabel = Instance.new("TextLabel")
+	valueLabel.BackgroundTransparency = 1
+	valueLabel.AnchorPoint = Vector2.new(1, 0)
+	valueLabel.Position = UDim2.new(1, -12, 0, 6)
+	valueLabel.Size = UDim2.fromOffset(60, 18)
+	valueLabel.Font = Enum.Font.GothamSemibold
+	valueLabel.Text = tostring(default)
+	valueLabel.TextSize = 13
+	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	valueLabel.TextColor3 = Theme.SubText
+	valueLabel.ZIndex = 9
+	valueLabel.Parent = holder
+
+	local bar = Instance.new("Frame")
+	bar.Position = UDim2.fromOffset(12, 31)
+	bar.Size = UDim2.new(1, -24, 0, 8)
+	bar.BackgroundColor3 = Color3.fromRGB(42,42,50)
+	bar.ZIndex = 9
+	bar.Parent = holder
+	makeCorner(bar, 4)
+
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new((default-min)/(max-min), 0, 1, 0)
+	fill.BackgroundColor3 = Theme.Accent
+	fill.ZIndex = 10
+	fill.Parent = bar
+	makeCorner(fill, 4)
+	addGradient(fill, Theme.Accent, Theme.Accent2, 0)
+
+	local knob = Instance.new("Frame")
+	knob.AnchorPoint = Vector2.new(0.5, 0.5)
+	knob.Position = UDim2.new(fill.Size.X.Scale, 0, 0.5, 0)
+	knob.Size = UDim2.fromOffset(14, 14)
+	knob.BackgroundColor3 = Color3.new(1,1,1)
+	knob.ZIndex = 11
+	knob.Parent = bar
+	makeCorner(knob, 7)
+
+	local dragging = false
+	local value = default
+
+	local function updateFromX(x: number)
+		local alpha = math.clamp((x - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
+		value = math.floor((min + (max - min) * alpha) + 0.5)
+		fill.Size = UDim2.new(alpha, 0, 1, 0)
+		knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+		valueLabel.Text = tostring(value)
+	end
+
+	bar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			updateFromX(UserInputService:GetMouseLocation().X)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			updateFromX(UserInputService:GetMouseLocation().X)
+		end
+	end)
+
+	return holder
+end
+
+local function createDropdown(parent: Instance, text: string, options: {string}, defaultIndex: number?)
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1, 0, 0, 40)
+	holder.BackgroundColor3 = Theme.Soft
+	holder.ZIndex = 8
+	holder.Parent = parent
+	makeCorner(holder, 9)
+	makeStroke(holder, Theme.Stroke, 1)
+
+	local currentIndex = defaultIndex or 1
+	local value = options[currentIndex] or "None"
+
+	local button = Instance.new("TextButton")
+	button.BackgroundTransparency = 1
+	button.Size = UDim2.fromScale(1,1)
+	button.Text = ""
+	button.ZIndex = 9
+	button.Parent = holder
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(12, 0)
+	label.Size = UDim2.new(0.55, 0, 1, 0)
+	label.Font = Enum.Font.GothamMedium
+	label.Text = text
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 10
+	label.Parent = holder
+	registerSearchTarget(label)
+
+	local valueText = Instance.new("TextLabel")
+	valueText.BackgroundTransparency = 1
+	valueText.AnchorPoint = Vector2.new(1, 0)
+	valueText.Position = UDim2.new(1, -34, 0, 0)
+	valueText.Size = UDim2.new(0.35, 0, 1, 0)
+	valueText.Font = Enum.Font.Gotham
+	valueText.Text = value
+	valueText.TextSize = 12
+	valueText.TextXAlignment = Enum.TextXAlignment.Right
+	valueText.TextColor3 = Theme.SubText
+	valueText.ZIndex = 10
+	valueText.Parent = holder
+
+	local arrow = Instance.new("TextLabel")
+	arrow.BackgroundTransparency = 1
+	arrow.AnchorPoint = Vector2.new(1, 0)
+	arrow.Position = UDim2.new(1, -12, 0, 0)
+	arrow.Size = UDim2.fromOffset(18, 40)
+	arrow.Font = Enum.Font.GothamBold
+	arrow.Text = "▾"
+	arrow.TextSize = 14
+	arrow.TextColor3 = Theme.SubText
+	arrow.ZIndex = 10
+	arrow.Parent = holder
+
+	button.MouseButton1Click:Connect(function()
+		currentIndex += 1
+		if currentIndex > #options then
+			currentIndex = 1
+		end
+		valueText.Text = options[currentIndex]
+	end)
+
+	return holder
+end
+
+local function createLabel(parent: Instance, text: string)
+	local holder = Instance.new("Frame")
+	holder.Size = UDim2.new(1, 0, 0, 34)
+	holder.BackgroundColor3 = Theme.Soft
+	holder.ZIndex = 8
+	holder.Parent = parent
+	makeCorner(holder, 9)
+	makeStroke(holder, Theme.Stroke, 1)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(12, 0)
+	label.Size = UDim2.new(1, -24, 1, 0)
+	label.Font = Enum.Font.Gotham
+	label.Text = text
+	label.TextSize = 12
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.SubText
+	label.ZIndex = 9
+	label.Parent = holder
+	registerSearchTarget(label)
+
+	return holder
+end
+
+-- pages
+local mainPage = makePage("Main")
+local visualsPage = makePage("Visuals")
+local playerPage = makePage("Player")
+local settingsPage = makePage("Settings")
+
+local function buildDualPage(page: Frame, leftTitle: string, rightTitle: string, entriesLeft: {(Instance)->()}, entriesRight: {(Instance)->()})
+	local leftSection, leftContent = makeSection(page, leftTitle, UDim2.new(0.5, -6, 1, 0), UDim2.new(0,0,0,0))
+	local rightSection, rightContent = makeSection(page, rightTitle, UDim2.new(0.5, -6, 1, 0), UDim2.new(0.5, 6, 0, 0))
+
+	for _, fn in ipairs(entriesLeft) do
+		fn(leftContent)
+	end
+	for _, fn in ipairs(entriesRight) do
+		fn(rightContent)
+	end
+
+	return leftSection, rightSection
+end
+
+buildDualPage(
+	mainPage,
+	"Dashboard",
+	"Workspace",
+	{
+		function(p) createLabel(p, "Premium interface mockup inspired by a competitive menu style.") end,
+		function(p) createToggle(p, "Enable dashboard widgets", true) end,
+		function(p) createToggle(p, "Compact card spacing", false) end,
+		function(p) createSlider(p, "Interface opacity", 50, 100, 92) end,
+		function(p) createDropdown(p, "Visual preset", {"Default", "Carbon", "Crimson", "Minimal"}, 2) end,
+		function(p) createButton(p, "Apply visual preset") end,
+	},
+	{
+		function(p) createToggle(p, "Show right preview", true) end,
+		function(p) createToggle(p, "Animated transitions", true) end,
+		function(p) createToggle(p, "Card texture overlay", true) end,
+		function(p) createSlider(p, "Animation speed", 1, 10, 6) end,
+		function(p) createDropdown(p, "Workspace layout", {"Dual Column", "Wide Left", "Wide Right"}, 1) end,
+		function(p) createButton(p, "Refresh workspace") end,
+	}
+)
+
+buildDualPage(
+	visualsPage,
+	"Interface Styling",
+	"Overlays",
+	{
+		function(p) createToggle(p, "Glow accents", true) end,
+		function(p) createToggle(p, "Gradient fills", true) end,
+		function(p) createToggle(p, "Rounded premium corners", true) end,
+		function(p) createSlider(p, "Glow intensity", 0, 100, 65) end,
+		function(p) createDropdown(p, "Accent profile", {"Lotus Red", "Ruby Night", "Dark Crimson"}, 1) end,
+		function(p) createButton(p, "Rebuild style layers") end,
+	},
+	{
+		function(p) createToggle(p, "Status overlay", true) end,
+		function(p) createToggle(p, "Bottom tab highlights", true) end,
+		function(p) createToggle(p, "Preview stats", true) end,
+		function(p) createSlider(p, "Overlay scale", 75, 125, 100) end,
+		function(p) createDropdown(p, "Preview mode", {"Character", "Stats", "Minimal"}, 1) end,
+		function(p) createButton(p, "Update overlay") end,
+	}
+)
+
+buildDualPage(
+	playerPage,
+	"Profile",
+	"Layout Controls",
+	{
+		function(p) createLabel(p, "This page is visual-only and intended for profile style controls.") end,
+		function(p) createToggle(p, "Show profile card", true) end,
+		function(p) createToggle(p, "Use premium badge", true) end,
+		function(p) createSlider(p, "Preview zoom", 50, 130, 90) end,
+		function(p) createDropdown(p, "Card mode", {"Full", "Compact", "Minimal"}, 1) end,
+		function(p) createButton(p, "Recenter preview") end,
+	},
+	{
+		function(p) createToggle(p, "Detached bottom tabs", true) end,
+		function(p) createToggle(p, "Search filtering", true) end,
+		function(p) createToggle(p, "Header version badge", true) end,
+		function(p) createSlider(p, "UI scale", 80, 120, 100) end,
+		function(p) createDropdown(p, "Header style", {"Premium", "Wide", "Compact"}, 1) end,
+		function(p) createButton(p, "Save layout") end,
+	}
+)
+
+buildDualPage(
+	settingsPage,
+	"Preferences",
+	"System",
+	{
+		function(p) createToggle(p, "Menu blur", true) end,
+		function(p) createToggle(p, "Open/close sound", false) end,
+		function(p) createToggle(p, "Notification stack", true) end,
+		function(p) createSlider(p, "Blur strength", 0, 30, 14) end,
+		function(p) createDropdown(p, "Color theme", {"Red Carbon", "Midnight Red", "Dark Metal"}, 1) end,
+		function(p) createButton(p, "Apply settings") end,
+	},
+	{
+		function(p) createToggle(p, "Performance mode", false) end,
+		function(p) createToggle(p, "Frame texture", true) end,
+		function(p) createToggle(p, "Smooth UI tweens", true) end,
+		function(p) createSlider(p, "Notification duration", 2, 10, 4) end,
+		function(p) createDropdown(p, "Language", {"English", "Spanish"}, 2) end,
+		function(p) createButton(p, "Reset interface") end,
+	}
+)
+
+-- tab creation
+local function makeTabButton(parent: Instance, text: string, width: number, onClick: ()->())
+	local btn = Instance.new("TextButton")
+	btn.AutoButtonColor = false
+	btn.Size = UDim2.fromOffset(width, 32)
+	btn.BackgroundColor3 = Theme.Soft
+	btn.Text = ""
+	btn.ZIndex = 11
+	btn.Parent = parent
+	makeCorner(btn, 9)
+	makeStroke(btn, Theme.Stroke, 1)
+
+	local lbl = Instance.new("TextLabel")
+	lbl.BackgroundTransparency = 1
+	lbl.Size = UDim2.fromScale(1,1)
+	lbl.Font = Enum.Font.GothamSemibold
+	lbl.Text = text
+	lbl.TextSize = 13
+	lbl.TextColor3 = Theme.SubText
+	lbl.ZIndex = 12
+	lbl.Parent = btn
+
+	btn.MouseEnter:Connect(function()
+		tween(btn, TweenInfo.new(0.14), {BackgroundColor3 = Color3.fromRGB(38,38,46)})
+	end)
+	btn.MouseLeave:Connect(function()
+		if currentPage ~= text and currentSub ~= text then
+			tween(btn, TweenInfo.new(0.14), {BackgroundColor3 = Theme.Soft})
+		end
+	end)
+	btn.MouseButton1Click:Connect(onClick)
+
+	return btn, lbl
+end
+
+local function updatePageButtonState()
+	for name, btn in pairs(pageButtons) do
+		local active = name == currentPage
+		local lbl = btn:FindFirstChildOfClass("TextLabel")
+		tween(btn, TweenInfo.new(0.15), {
+			BackgroundColor3 = active and Theme.Accent2 or Theme.Soft
+		})
+		if lbl then
+			tween(lbl, TweenInfo.new(0.15), {
+				TextColor3 = active and Theme.Text or Theme.SubText
+			})
+		end
+	end
+end
+
+local function updateSubButtonState()
+	for name, btn in pairs(subTabButtons) do
+		local active = name == currentSub
+		local lbl = btn:FindFirstChildOfClass("TextLabel")
+		tween(btn, TweenInfo.new(0.15), {
+			BackgroundColor3 = active and Theme.Accent2 or Theme.Soft
+		})
+		if lbl then
+			tween(lbl, TweenInfo.new(0.15), {
+				TextColor3 = active and Theme.Text or Theme.SubText
+			})
+		end
+	end
+end
+
+local function showPage(name: string)
+	currentPage = name
+	for pageName, page in pairs(pages) do
+		page.Visible = pageName == name
+	end
+	updatePageButtonState()
+end
+
+local defaultSubTabs = {"Overview", "Panels", "Style"}
+
+local function rebuildSubTabs()
+	for _, child in ipairs(subTabsBar:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+	table.clear(subTabButtons)
+
+	for _, name in ipairs(defaultSubTabs) do
+		local b = makeTabButton(subTabsBar, name, 96, function()
+			currentSub = name
+			updateSubButtonState()
+		end)
+		subTabButtons[name] = b
+	end
+	updateSubButtonState()
+end
+
+pageButtons["Main"] = makeTabButton(tabsBar, "Main", 112, function() showPage("Main") end)
+pageButtons["Visuals"] = makeTabButton(tabsBar, "Visuals", 112, function() showPage("Visuals") end)
+pageButtons["Player"] = makeTabButton(tabsBar, "Player", 112, function() showPage("Player") end)
+pageButtons["Settings"] = makeTabButton(tabsBar, "Settings", 112, function() showPage("Settings") end)
+
+rebuildSubTabs()
+showPage("Main")
+
+-- notifications
+local notifHolder = Instance.new("Frame")
+notifHolder.Name = "Notifications"
+notifHolder.AnchorPoint = Vector2.new(1, 1)
+notifHolder.Position = UDim2.new(1, -18, 1, -78)
+notifHolder.Size = UDim2.fromOffset(320, 240)
+notifHolder.BackgroundTransparency = 1
+notifHolder.ZIndex = 30
+notifHolder.Parent = gui
+
+local notifLayout = addList(notifHolder, 8)
+notifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+
+local function notify(titleText: string, bodyText: string, duration: number?)
+	duration = duration or 4
+
+	local card = Instance.new("Frame")
+	card.AnchorPoint = Vector2.new(1, 0)
+	card.Size = UDim2.fromOffset(300, 64)
+	card.BackgroundColor3 = Theme.BG2
+	card.BackgroundTransparency = 0.05
+	card.ZIndex = 31
+	card.Parent = notifHolder
+	makeCorner(card, 11)
+	makeStroke(card, Theme.Stroke, 1)
+	addTextureOverlay(card, "rbxassetid://9968344105", 0.95)
+
+	local accent = Instance.new("Frame")
+	accent.Size = UDim2.fromOffset(3, 64)
+	accent.BackgroundColor3 = Theme.Accent
+	accent.BorderSizePixel = 0
+	accent.ZIndex = 32
+	accent.Parent = card
+
+	local titleN = Instance.new("TextLabel")
+	titleN.BackgroundTransparency = 1
+	titleN.Position = UDim2.fromOffset(14, 8)
+	titleN.Size = UDim2.new(1, -28, 0, 18)
+	titleN.Font = Enum.Font.GothamBold
+	titleN.Text = titleText
+	titleN.TextSize = 13
+	titleN.TextXAlignment = Enum.TextXAlignment.Left
+	titleN.TextColor3 = Theme.Text
+	titleN.ZIndex = 32
+	titleN.Parent = card
+
+	local bodyN = Instance.new("TextLabel")
+	bodyN.BackgroundTransparency = 1
+	bodyN.Position = UDim2.fromOffset(14, 28)
+	bodyN.Size = UDim2.new(1, -28, 0, 26)
+	bodyN.Font = Enum.Font.Gotham
+	bodyN.TextWrapped = true
+	bodyN.Text = bodyText
+	bodyN.TextSize = 12
+	bodyN.TextXAlignment = Enum.TextXAlignment.Left
+	bodyN.TextYAlignment = Enum.TextYAlignment.Top
+	bodyN.TextColor3 = Theme.SubText
+	bodyN.ZIndex = 32
+	bodyN.Parent = card
+
+	card.Position = UDim2.fromOffset(40, 0)
+	card.BackgroundTransparency = 1
+	tween(card, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Position = UDim2.fromOffset(0, 0),
+		BackgroundTransparency = 0.05
+	})
+
+	task.delay(duration, function()
+		if not card.Parent then return end
+		tween(card, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = UDim2.fromOffset(40, 0),
+			BackgroundTransparency = 1
+		})
+		task.wait(0.24)
+		if card then
+			card:Destroy()
+		end
+	end)
+end
+
+-- preview character clone
+local function buildPreviewCharacter()
+	local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+	local previewModel = Instance.new("Model")
+	previewModel.Name = "PreviewRig"
+	previewModel.Parent = viewport
+
+	for _, obj in ipairs(character:GetChildren()) do
+		if obj:IsA("BasePart") or obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
+			local clone = obj:Clone()
+			clone.Parent = previewModel
+		end
+	end
+
+	local cam = viewport.CurrentCamera
+	cam.FieldOfView = 32
+
+	local rootPart = previewModel:FindFirstChild("HumanoidRootPart") or previewModel:FindFirstChild("UpperTorso") or previewModel:FindFirstChild("Torso")
+	if rootPart and rootPart:IsA("BasePart") then
+		previewModel:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(180), 0))
+		cam.CFrame = CFrame.new(Vector3.new(0, 1.4, 7), Vector3.new(0, 1.2, 0))
+	end
+
+	local light = Instance.new("PointLight")
+	light.Range = 16
+	light.Brightness = 2
+	light.Color = Color3.fromRGB(255, 235, 235)
+	light.Parent = cam
+end
+
+pcall(buildPreviewCharacter)
+
+-- dragging
+local dragging = false
+local dragStart = Vector2.zero
+local startPos = UDim2.new()
+
+header.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = UserInputService:GetMouseLocation()
+		startPos = root.Position
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = UserInputService:GetMouseLocation() - dragStart
+		root.Position = UDim2.new(
+			startPos.X.Scale, startPos.X.Offset + delta.X,
+			startPos.Y.Scale, startPos.Y.Offset + delta.Y
+		)
+	end
+end)
+
+-- search filtering
+local function applySearch(query: string)
+	query = string.lower(query)
+
+	for _, obj in ipairs(allSearchTargets) do
+		local parent = obj.Parent
+		if parent and parent:IsA("GuiObject") then
+			if query == "" then
+				parent.Visible = true
+			else
+				local text = ""
+				if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+					text = string.lower(obj.Text)
+				end
+				parent.Visible = string.find(text, query, 1, true) ~= nil
+			end
+		end
+	end
+end
+
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	applySearch(searchBox.Text)
+end)
+
+-- open / close
+local function setOpen(state: boolean)
+	menuOpen = state
+	tween(UIScaleRoot, TweenInfo.new(0.18), {Scale = state and 1 or 0.96})
+	tween(main, TweenInfo.new(0.18), {BackgroundTransparency = state and 0 or 0.12})
+	tween(glow, TweenInfo.new(0.18), {ImageTransparency = state and 0.35 or 0.6})
+	tween(blur, TweenInfo.new(0.18), {Size = state and 14 or 0})
+	bottomHolder.Visible = state
+	previewCard.Visible = state
+	pagesHolder.Visible = state
+	header.Visible = state
+	if not state then
+		task.delay(0.18, function()
+			if not menuOpen then
+				main.Visible = false
+			end
+		end)
+	else
+		main.Visible = true
+	end
+end
+
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp then return end
+
+	if input.KeyCode == Enum.KeyCode.RightShift then
+		if not menuOpen then
+			main.Visible = true
+		end
+		setOpen(not menuOpen)
+	end
+end)
+
+-- startup animation
+main.Size = UDim2.new(1, 0, 1, -70)
+main.Visible = true
+tabsBar.Position = UDim2.fromScale(0.37, 1.6)
+subTabsBar.Position = UDim2.new(1, -8, 1.6, 0)
+header.Position = UDim2.fromOffset(10, -80)
+previewCard.Position = UDim2.new(1, 280, 0, 0)
+blur.Size = 0
+
+tween(header, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromOffset(10, 10)})
+tween(previewCard, TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, 0, 0, 0)})
+tween(tabsBar, TweenInfo.new(0.32, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.fromScale(0.37, 0.5)})
+tween(subTabsBar, TweenInfo.new(0.36, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = UDim2.new(1, -8, 0.5, 0)})
+tween(blur, TweenInfo.new(0.3), {Size = 14})
+
+notify("Lotus X", "Premium visual interface loaded.", 4)
+notify("Hint", "Press RightShift to show or hide the menu.", 5)
+
+-- soft accent pulse
+task.spawn(function()
+	while gui.Parent do
+		local g = math.sin(os.clock() * 1.8) * 0.06 + 0.16
+		glow.ImageTransparency = 0.35 + g
+		RunService.RenderStepped:Wait()
+	end
+end)
