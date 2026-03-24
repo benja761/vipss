@@ -1,3 +1,4 @@
+
 -- Valary-style safe UI library for Roblox Studio
 -- Visual framework only. No exploit or cheat logic.
 
@@ -23,8 +24,8 @@ local Theme = {
     Inline = Color3.fromRGB(30, 31, 43),
     Text = Color3.fromRGB(240, 240, 245),
     SubText = Color3.fromRGB(150, 153, 166),
-    Accent = Color3.fromRGB(255, 190, 40),
-    AccentDark = Color3.fromRGB(180, 130, 20),
+    Accent = Color3.fromRGB(0, 170, 255),
+    AccentDark = Color3.fromRGB(0, 115, 180),
     White = Color3.fromRGB(255, 255, 255),
     Green = Color3.fromRGB(0, 255, 140),
     Red = Color3.fromRGB(255, 70, 70),
@@ -67,7 +68,7 @@ local function Stroke(obj, color, thickness, transparency)
     local s = Instance.new("UIStroke")
     s.Color = color or Theme.Border
     s.Thickness = thickness or 1
-    s.Transparency = transparency or 0
+    s.Transparency = transparency or 0.45
     s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     s.Parent = obj
     return s
@@ -367,8 +368,8 @@ function Library:CreateWindow(title)
         Parent = gui,
         BackgroundColor3 = Theme.Main,
         BorderSizePixel = 0,
-        Size = UDim2.new(0, 760, 0, 500),
-        Position = UDim2.new(0.5, -380, 0.5, -250),
+        Size = UDim2.new(0, 920, 0, 580),
+        Position = UDim2.new(0.5, -460, 0.5, -290),
         ClipsDescendants = false,
     })
     self.Main = main
@@ -427,7 +428,7 @@ function Library:CreateWindow(title)
         Size = UDim2.new(0, 52, 0, 18),
         Font = Enum.Font.Gotham,
         TextSize = 11,
-        Text = "v2.2.0",
+        Text = "v1.1.0",
         TextColor3 = Theme.SubText,
         ZIndex = 4,
     })
@@ -470,8 +471,8 @@ function Library:CreateWindow(title)
     local searchFrame = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Position = UDim2.new(0, 12, 0, 54),
-        Size = UDim2.new(0, 260, 0, 34),
+        Position = UDim2.new(0, 12, 0, 52),
+        Size = UDim2.new(0, 285, 0, 34),
         ZIndex = 3,
     })
     Corner(searchFrame, 8)
@@ -498,7 +499,7 @@ function Library:CreateWindow(title)
         Parent = main,
         BackgroundTransparency = 1,
         Position = UDim2.new(0, 12, 0, 96),
-        Size = UDim2.new(1, -24, 1, -160),
+        Size = UDim2.new(1, -24, 1, -176),
         ClipsDescendants = true,
         ZIndex = 2,
     })
@@ -507,8 +508,9 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 210, 0, 42),
-        Position = UDim2.new(0.5, -105, 1, 28),
+        AnchorPoint = Vector2.new(0.5, 1),
+        Size = UDim2.new(0, 310, 0, 42),
+        Position = UDim2.new(0.5, 0, 1, 52),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -535,14 +537,15 @@ function Library:CreateWindow(title)
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         VerticalAlignment = Enum.VerticalAlignment.Center,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, 6),
     })
 
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 320, 0, 40),
-        Position = UDim2.new(0.5, -160, 1, -4),
+        AnchorPoint = Vector2.new(0.5, 1),
+        Size = UDim2.new(0, 240, 0, 38),
+        Position = UDim2.new(0.5, 0, 1, 6),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
@@ -570,14 +573,15 @@ function Library:CreateWindow(title)
         FillDirection = Enum.FillDirection.Horizontal,
         HorizontalAlignment = Enum.HorizontalAlignment.Center,
         VerticalAlignment = Enum.VerticalAlignment.Center,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, 6),
     })
 
     local notifHolder = Create("Frame", {
         Parent = gui,
         BackgroundTransparency = 1,
-        Position = UDim2.new(1, -320, 1, -110),
-        Size = UDim2.new(0, 290, 0, 100),
+        Position = UDim2.new(1, -336, 1, -28),
+        AnchorPoint = Vector2.new(1, 1),
+        Size = UDim2.new(0, 320, 0, 260),
         ZIndex = 80,
     })
 
@@ -619,54 +623,140 @@ function Library:CreateWindow(title)
     end
 
     function self:Notify(text)
+        self._Notifications = self._Notifications or {}
+
+        local index = #self._Notifications + 1
+        local baseY = -8 - ((index - 1) * 56)
+
+        local shadow = Create("Frame", {
+            Parent = notifHolder,
+            BackgroundColor3 = Color3.new(0, 0, 0),
+            BackgroundTransparency = 0.7,
+            BorderSizePixel = 0,
+            AnchorPoint = Vector2.new(1, 1),
+            Position = UDim2.new(1, 10, 1, baseY - 2),
+            Size = UDim2.new(0, 0, 0, 44),
+            ZIndex = 79,
+        })
+        Corner(shadow, 12)
+
         local card = Create("Frame", {
             Parent = notifHolder,
             BackgroundColor3 = Theme.Panel,
             BorderSizePixel = 0,
-            Size = UDim2.new(1, 30, 0, 0),
-            Position = UDim2.new(0, 40, 1, -56),
+            AnchorPoint = Vector2.new(1, 1),
+            Position = UDim2.new(1, 18, 1, baseY),
+            Size = UDim2.new(0, 0, 0, 44),
             ZIndex = 80,
         })
         Corner(card, 12)
-        Stroke(card, Theme.Border, 1)
+        local cardStroke = Stroke(card, Theme.Border, 1, 0.3)
 
-        local bar = Create("Frame", {
+        local accentGlow = Create("Frame", {
             Parent = card,
             BackgroundColor3 = Theme.Accent,
+            BackgroundTransparency = 0.78,
             BorderSizePixel = 0,
-            Size = UDim2.new(0, 3, 1, 0),
+            Position = UDim2.new(0, 0, 0, 0),
+            Size = UDim2.new(0, 4, 1, 0),
             ZIndex = 81,
         })
-        Corner(bar, 8)
-        self:RegisterAccentObject(bar, "bg")
+        Corner(accentGlow, 12)
+        self:RegisterAccentObject(accentGlow, "bg")
 
-        Create("TextLabel", {
+        local title = Create("TextLabel", {
             Parent = card,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0, 12, 0, 0),
-            Size = UDim2.new(1, -18, 1, 0),
+            Position = UDim2.new(0, 14, 0, 6),
+            Size = UDim2.new(1, -26, 0, 14),
             Font = Enum.Font.GothamBold,
             TextXAlignment = Enum.TextXAlignment.Left,
-            Text = text,
+            Text = "Notification",
+            TextColor3 = Theme.SubText,
+            TextSize = 11,
+            ZIndex = 82,
+        })
+
+        local body = Create("TextLabel", {
+            Parent = card,
+            BackgroundTransparency = 1,
+            Position = UDim2.new(0, 14, 0, 18),
+            Size = UDim2.new(1, -26, 0, 18),
+            Font = Enum.Font.GothamBold,
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Text = tostring(text),
             TextColor3 = Theme.Text,
             TextSize = 13,
             ZIndex = 82,
         })
 
-        Tween(card, 0.2, {
-            Size = UDim2.new(1, 0, 0, 44),
-            Position = UDim2.new(0, 0, 1, -56)
+        local progressBack = Create("Frame", {
+            Parent = card,
+            BackgroundColor3 = Theme.Element,
+            BackgroundTransparency = 0.18,
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 14, 1, -8),
+            Size = UDim2.new(1, -28, 0, 2),
+            ZIndex = 82,
+        })
+        Corner(progressBack, 999)
+
+        local progress = Create("Frame", {
+            Parent = progressBack,
+            BackgroundColor3 = Theme.Accent,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 1, 0),
+            ZIndex = 83,
+        })
+        Corner(progress, 999)
+        self:RegisterAccentObject(progress, "bg")
+
+        table.insert(self._Notifications, {card = card, shadow = shadow})
+
+        Tween(shadow, 0.18, {
+            Position = UDim2.new(1, 0, 1, baseY - 2),
+            Size = UDim2.new(0, 304, 0, 44)
         })
 
-        task.delay(2.2, function()
-            if card and card.Parent then
-                Tween(card, 0.18, {
-                    BackgroundTransparency = 1,
-                    Position = UDim2.new(0, 50, 1, -56)
-                })
-                task.wait(0.22)
-                if card then
-                    card:Destroy()
+        Tween(card, 0.18, {
+            Position = UDim2.new(1, 0, 1, baseY),
+            Size = UDim2.new(0, 304, 0, 44)
+        })
+
+        Tween(progress, 2.8, {Size = UDim2.new(0, 0, 1, 0)}, Enum.EasingStyle.Linear)
+
+        task.delay(2.85, function()
+            local removeIndex = nil
+            for i, data in ipairs(self._Notifications) do
+                if data.card == card then
+                    removeIndex = i
+                    break
+                end
+            end
+
+            Tween(card, 0.18, {
+                BackgroundTransparency = 1,
+                Position = UDim2.new(1, 18, 1, baseY)
+            })
+            Tween(shadow, 0.18, {
+                BackgroundTransparency = 1,
+                Position = UDim2.new(1, 24, 1, baseY - 2)
+            })
+
+            task.wait(0.2)
+            if card then card:Destroy() end
+            if shadow then shadow:Destroy() end
+
+            if removeIndex then
+                table.remove(self._Notifications, removeIndex)
+                for i, data in ipairs(self._Notifications) do
+                    local targetY = -8 - ((i - 1) * 56)
+                    if data.card and data.card.Parent then
+                        Tween(data.card, 0.16, {Position = UDim2.new(1, 0, 1, targetY)})
+                    end
+                    if data.shadow and data.shadow.Parent then
+                        Tween(data.shadow, 0.16, {Position = UDim2.new(1, 0, 1, targetY - 2)})
+                    end
                 end
             end
         end)
@@ -1270,10 +1360,10 @@ end
 
         if self._SmoothOpen then
             Tween(main, 0.18, {
-                Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
+                Size = minimized and UDim2.new(0, 920, 0, 96) or UDim2.new(0, 920, 0, 580)
             })
         else
-            main.Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
+            main.Size = minimized and UDim2.new(0, 920, 0, 96) or UDim2.new(0, 920, 0, 580)
         end
 
         pages.Visible = not minimized
@@ -1405,7 +1495,7 @@ end
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 Position = UDim2.new(0, 0, 0, 0),
-                Size = UDim2.new(0.5, -8, 1, 0),
+                Size = UDim2.new(0.485, -6, 1, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 CanvasSize = UDim2.new(),
                 ScrollBarThickness = 3,
@@ -1417,7 +1507,7 @@ end
                 BackgroundTransparency = 1,
                 BorderSizePixel = 0,
                 Position = UDim2.new(0.5, 8, 0, 0),
-                Size = UDim2.new(0.5, -8, 1, 0),
+                Size = UDim2.new(0.485, -6, 1, 0),
                 AutomaticCanvasSize = Enum.AutomaticSize.Y,
                 CanvasSize = UDim2.new(),
                 ScrollBarThickness = 3,
@@ -2204,8 +2294,8 @@ end
         local preview = Create("Frame", {
             Parent = main,
             BackgroundColor3 = Theme.Panel,
-            Size = UDim2.new(0, 260, 0, 430),
-            Position = UDim2.new(1, 14, 0, 60),
+            Size = UDim2.new(0, 250, 0, 470),
+            Position = UDim2.new(1, 16, 0, 52),
             ZIndex = 4,
         })
         Corner(preview, 8)
