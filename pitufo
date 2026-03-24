@@ -1,134 +1,105 @@
+
 repeat task.wait() until game:IsLoaded()
 
+local parent = (gethui and gethui()) or game:GetService("CoreGui")
 local TweenService = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 
-local parentGui
+-- LIMPIAR
+local old = parent:FindFirstChild("SPAM_PITUFO")
+if old then old:Destroy() end
 
-pcall(function()
-    if gethui then
-        parentGui = gethui()
-    end
-end)
+local gui = Instance.new("ScreenGui")
+gui.Name = "SPAM_PITUFO"
+gui.Parent = parent
+gui.ResetOnSpawn = false
 
-if not parentGui then
-    pcall(function()
-        parentGui = game:GetService("CoreGui")
-    end)
+-- FUNCION RGB
+local function getRGB(t)
+	return Color3.fromRGB(
+		math.floor(math.sin(t)*127+128),
+		math.floor(math.sin(t+2)*127+128),
+		math.floor(math.sin(t+4)*127+128)
+	)
 end
 
-if not parentGui then
-    return warn("No se pudo encontrar un parent para la GUI")
-end
-
-local old = parentGui:FindFirstChild("PITUFO_ESTAFAR_GUI")
-if old then
-    old:Destroy()
-end
-
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "PITUFO_ESTAFAR_GUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.Parent = parentGui
-
-local Main = Instance.new("Frame")
-Main.Name = "Main"
-Main.Parent = ScreenGui
-Main.AnchorPoint = Vector2.new(0.5, 0.5)
-Main.Position = UDim2.new(0.5, 0, 0.5, 0)
-Main.Size = UDim2.new(0, 0, 0, 0)
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Main.BorderSizePixel = 0
-
-local Corner = Instance.new("UICorner")
-Corner.CornerRadius = UDim.new(0, 12)
-Corner.Parent = Main
-
-local Stroke = Instance.new("UIStroke")
-Stroke.Parent = Main
-Stroke.Thickness = 2
-Stroke.Color = Color3.fromRGB(255, 0, 0)
-
-local Title = Instance.new("TextLabel")
-Title.Parent = Main
-Title.BackgroundTransparency = 1
-Title.Size = UDim2.new(1, -20, 1, -20)
-Title.Position = UDim2.new(0, 10, 0, 10)
-Title.Font = Enum.Font.GothamBlack
-Title.TextScaled = true
-Title.TextWrapped = true
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Text = "ME QUERIAS ESTAFAR PITUFO?"
-
-local Close = Instance.new("TextButton")
-Close.Parent = Main
-Close.Size = UDim2.new(0, 28, 0, 28)
-Close.Position = UDim2.new(1, -34, 0, 6)
-Close.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-Close.TextColor3 = Color3.fromRGB(255,255,255)
-Close.Font = Enum.Font.GothamBold
-Close.TextSize = 16
-Close.Text = "X"
-
-local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 8)
-CloseCorner.Parent = Close
-
-TweenService:Create(
-    Main,
-    TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-    {Size = UDim2.new(0, 520, 0, 170)}
-):Play()
-
+-- SPAM MASIVO
 task.spawn(function()
-    while ScreenGui.Parent do
-        local t = tick()
-        local r = math.floor(math.sin(t) * 127 + 128)
-        local g = math.floor(math.sin(t + 2) * 127 + 128)
-        local b = math.floor(math.sin(t + 4) * 127 + 128)
-        Stroke.Color = Color3.fromRGB(r, g, b)
-        task.wait()
-    end
+	while gui.Parent do
+		for i = 1, 15 do -- cantidad por tick (sube esto si quieres MÁS loco)
+			
+			local txt = Instance.new("TextLabel")
+			txt.Parent = gui
+			txt.BackgroundTransparency = 1
+			txt.Text = "ME QUERIAS ESTAFAR PITUFO?"
+			txt.Font = Enum.Font.GothamBlack
+			txt.TextScaled = true
+			
+			-- tamaño random
+			local size = math.random(50, 200)
+			txt.Size = UDim2.new(0, size*4, 0, size)
+			
+			-- posición random
+			txt.Position = UDim2.new(
+				math.random(),
+				0,
+				math.random(),
+				0
+			)
+
+			-- rotación random
+			txt.Rotation = math.random(-30, 30)
+
+			-- color RGB dinámico
+			local t = tick()
+			txt.TextColor3 = getRGB(t)
+
+			-- animación
+			local tween = TweenService:Create(txt, TweenInfo.new(0.4), {
+				TextTransparency = 1,
+				Position = txt.Position + UDim2.new(0, math.random(-50,50), 0, math.random(-50,50))
+			})
+			
+			tween:Play()
+
+			tween.Completed:Connect(function()
+				txt:Destroy()
+			end)
+		end
+		
+		task.wait(0.03) -- velocidad (bájalo para MÁS spam)
+	end
 end)
 
-local dragging = false
-local dragStart
-local startPos
-
-Main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = Main.Position
-
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
+-- EFECTO FLASH GLOBAL
+task.spawn(function()
+	while gui.Parent do
+		local flash = Instance.new("Frame")
+		flash.Parent = gui
+		flash.Size = UDim2.new(1,0,1,0)
+		flash.BackgroundColor3 = getRGB(tick())
+		flash.BackgroundTransparency = 0.9
+		
+		TweenService:Create(flash, TweenInfo.new(0.2), {
+			BackgroundTransparency = 1
+		}):Play()
+		
+		task.wait(0.1)
+		flash:Destroy()
+	end
 end)
 
-UIS.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(
-            startPos.X.Scale,
-            startPos.X.Offset + delta.X,
-            startPos.Y.Scale,
-            startPos.Y.Offset + delta.Y
-        )
-    end
-end)
+-- TEXTO CENTRAL FIJO (MÁS IMPACTO)
+local center = Instance.new("TextLabel")
+center.Parent = gui
+center.Size = UDim2.new(0, 800, 0, 200)
+center.Position = UDim2.new(0.5, -400, 0.5, -100)
+center.BackgroundTransparency = 1
+center.Text = "ME QUERIAS ESTAFAR PITUFO?"
+center.TextScaled = true
+center.Font = Enum.Font.GothamBlack
 
-Close.MouseButton1Click:Connect(function()
-    local tween = TweenService:Create(
-        Main,
-        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
-        {Size = UDim2.new(0, 0, 0, 0)}
-    )
-    tween:Play()
-    tween.Completed:Wait()
-    ScreenGui:Destroy()
+RunService.RenderStepped:Connect(function()
+	center.TextColor3 = getRGB(tick())
+	center.Rotation = math.sin(tick()*5)*5
 end)
