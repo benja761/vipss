@@ -238,15 +238,15 @@ local function cloneCharacter(viewport)
     if primary then
         clone.PrimaryPart = primary
         pcall(function()
-            clone:PivotTo(CFrame.new(0, -0.8, 0))
+            clone:PivotTo(CFrame.new(0, -1.05, 0) * CFrame.Angles(0, math.rad(180), 0))
         end)
     end
 
-    cam.CFrame = CFrame.new(Vector3.new(0, 1.5, 5.1), Vector3.new(0, 1.2, 0))
+    cam.CFrame = CFrame.new(Vector3.new(0, 1.15, 6.8), Vector3.new(0, 1.15, 0))
 
     local light = Instance.new("PointLight")
     light.Range = 24
-    light.Brightness = 1.8
+    light.Brightness = 2
     light.Parent = cam
 
     return clone
@@ -507,15 +507,15 @@ function Library:CreateWindow(title)
     local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 210, 0, 42),
-        Position = UDim2.new(0.5, -105, 1, 28),
+        Size = UDim2.new(0, 120, 0, 28),
+        Position = UDim2.new(0.5, -60, 1, -14),
         ZIndex = 20,
         ClipsDescendants = true,
     })
     self.MainTabsHolder = mainTabsHolder
     Corner(mainTabsHolder, 999)
     Stroke(mainTabsHolder, Theme.Border, 1)
-    Padding(mainTabsHolder, 8, 8, 6, 6)
+    Padding(mainTabsHolder, 6, 6, 4, 4)
 
     local mainTabsScroll = Create("ScrollingFrame", {
         Parent = mainTabsHolder,
@@ -541,8 +541,8 @@ function Library:CreateWindow(title)
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 320, 0, 40),
-        Position = UDim2.new(0.5, -160, 1, -4),
+        Size = UDim2.new(0, 96, 0, 28),
+        Position = UDim2.new(0.5, -48, 1, -48),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
@@ -550,7 +550,7 @@ function Library:CreateWindow(title)
     self.SubTabHolder = subTabHolder
     Corner(subTabHolder, 999)
     Stroke(subTabHolder, Theme.Border, 1)
-    Padding(subTabHolder, 8, 8, 6, 6)
+    Padding(subTabHolder, 6, 6, 4, 4)
 
     local subTabsScroll = Create("ScrollingFrame", {
         Parent = subTabHolder,
@@ -1006,7 +1006,7 @@ function Library:CreateWindow(title)
             Position = UDim2.new(0.5, 0, 0.5, 95),
             Size = UDim2.new(0, 220, 0, 20),
             Font = Enum.Font.GothamBold,
-            Text = "READY",
+            Text = "",
             TextColor3 = Theme.Text,
             TextSize = 13,
             ZIndex = 66,
@@ -1110,38 +1110,90 @@ function Library:CreateWindow(title)
         })
         self.PreviewOverlay = overlay
 
+        local boxX = 0.29
+        local boxY = 0.13
+        local boxW = 0.42
+        local boxH = 0.72
+
         local highlight = Create("Frame", {
             Parent = overlay,
             BackgroundColor3 = Theme.Accent,
-            BackgroundTransparency = 0.82,
+            BackgroundTransparency = 0.86,
             BorderSizePixel = 0,
-            Position = UDim2.new(0.25, 0, 0.16, 0),
-            Size = UDim2.new(0.50, 0, 0.68, 0),
+            Position = UDim2.new(boxX, 0, boxY, 0),
+            Size = UDim2.new(boxW, 0, boxH, 0),
             ZIndex = 21,
             Visible = false,
         })
-        Corner(highlight, 10)
+        Corner(highlight, 8)
         self:RegisterAccentObject(highlight, "bg")
         self.PreviewHighlight = highlight
 
         local box = Create("Frame", {
             Parent = overlay,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.25, 0, 0.16, 0),
-            Size = UDim2.new(0.50, 0, 0.68, 0),
+            Position = UDim2.new(boxX, 0, boxY, 0),
+            Size = UDim2.new(boxW, 0, boxH, 0),
             ZIndex = 23,
             Visible = false,
         })
-        local boxStroke = Stroke(box, Theme.Accent, 2, 0)
         self.PreviewBox = box
+
+        local topLeftH = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(0, 0, 0, 0),
+            Visible = false, ZIndex = 24,
+        })
+        local topLeftV = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(0, 0, 0, 0),
+            Visible = false, ZIndex = 24,
+        })
+        local topRightH = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(1, -18, 0, 0),
+            Visible = false, ZIndex = 24,
+        })
+        local topRightV = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(1, -2, 0, 0),
+            Visible = false, ZIndex = 24,
+        })
+        local bottomLeftH = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(0, 0, 1, -2),
+            Visible = false, ZIndex = 24,
+        })
+        local bottomLeftV = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(0, 0, 1, -18),
+            Visible = false, ZIndex = 24,
+        })
+        local bottomRightH = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(1, -18, 1, -2),
+            Visible = false, ZIndex = 24,
+        })
+        local bottomRightV = Create("Frame", {
+            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(1, -2, 1, -18),
+            Visible = false, ZIndex = 24,
+        })
+
+        self.PreviewCornerLines = {
+            topLeftH, topLeftV, topRightH, topRightV,
+            bottomLeftH, bottomLeftV, bottomRightH, bottomRightV
+        }
+
+        local boxStroke = Stroke(box, Theme.Accent, 2, 0)
         self.PreviewBoxStroke = boxStroke
 
         local healthBack = Create("Frame", {
             Parent = overlay,
             BackgroundColor3 = Theme.Element,
             BorderSizePixel = 0,
-            Position = UDim2.new(0.21, 0, 0.16, 0),
-            Size = UDim2.new(0, 8, 0.68, 0),
+            Position = UDim2.new(boxX - 0.05, 0, boxY, 0),
+            Size = UDim2.new(0, 6, boxH, 0),
             ZIndex = 23,
             Visible = false,
         })
@@ -1165,8 +1217,8 @@ function Library:CreateWindow(title)
         local nameLabel = Create("TextLabel", {
             Parent = overlay,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.18, 0, 0.08, 0),
-            Size = UDim2.new(0.64, 0, 0, 20),
+            Position = UDim2.new(0.20, 0, 0.06, 0),
+            Size = UDim2.new(0.60, 0, 0, 20),
             Font = Enum.Font.GothamBold,
             Text = LocalPlayer.Name,
             TextColor3 = Theme.Text,
@@ -1179,8 +1231,8 @@ function Library:CreateWindow(title)
         local distanceLabel = Create("TextLabel", {
             Parent = overlay,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.18, 0, 0.87, 0),
-            Size = UDim2.new(0.64, 0, 0, 18),
+            Position = UDim2.new(0.20, 0, 0.88, 0),
+            Size = UDim2.new(0.60, 0, 0, 18),
             Font = Enum.Font.GothamBold,
             Text = "23m",
             TextColor3 = Theme.SubText,
@@ -1192,10 +1244,7 @@ function Library:CreateWindow(title)
     end
 
     function self:UpdatePreviewESP()
-     
-
-
-     if not self.PreviewPanel or not self.PreviewViewport then
+        if not self.PreviewPanel or not self.PreviewViewport then
             return
         end
 
@@ -1207,20 +1256,43 @@ function Library:CreateWindow(title)
         end
 
         if self.PreviewBox then
-    local showBox = self.PreviewState.Box
-    self.PreviewBox.Visible = showBox
+            local showBox = self.PreviewState.Box
+            self.PreviewBox.Visible = showBox
 
-    if self.PreviewBoxStroke then
-        self.PreviewBoxStroke.Color = self.PreviewState.BoxColor
+            if self.PreviewBoxStroke then
+                self.PreviewBoxStroke.Color = self.PreviewState.BoxColor
+                self.PreviewBoxStroke.Enabled = self.PreviewState.Mode ~= "Corner"
+                self.PreviewBoxStroke.Thickness = 2
+            end
 
-        if self.PreviewState.Mode == "Corner" then
-            self.PreviewBoxStroke.Thickness = 3
-            self.PreviewBox.BackgroundTransparency = 1
-            self.PreviewBox.Size = UDim2.new(0.50, 0, 0.68, 0)
-        else
-            self.PreviewBoxStroke.Thickness = 2
-            self.PreviewBox.BackgroundTransparency = 1
-            self.PreviewBox.Size = UDim2.new(0.50, 0, 0.68, 0)
+            if self.PreviewCornerLines then
+                local showCorners = showBox and self.PreviewState.Mode == "Corner"
+                for _, line in ipairs(self.PreviewCornerLines) do
+                    line.Visible = showCorners
+                    line.BackgroundColor3 = self.PreviewState.BoxColor
+                end
+            end
+        end
+
+        if self.PreviewNameLabel then
+            self.PreviewNameLabel.Visible = self.PreviewState.Name
+            self.PreviewNameLabel.Text = LocalPlayer.Name
+            self.PreviewNameLabel.TextSize = self.PreviewState.NameSize
+            self.PreviewNameLabel.TextColor3 = self.PreviewState.NameColor
+        end
+
+        if self.PreviewDistanceLabel then
+            self.PreviewDistanceLabel.Visible = self.PreviewState.Distance
+            self.PreviewDistanceLabel.Text = tostring(self.PreviewState.DistanceValue) .. "m"
+            self.PreviewDistanceLabel.TextSize = self.PreviewState.DistanceSize
+            self.PreviewDistanceLabel.TextColor3 = self.PreviewState.DistanceColor
+        end
+
+        if self.PreviewHealthBack and self.PreviewHealthFill then
+            self.PreviewHealthBack.Visible = self.PreviewState.Health
+            local pct = math.clamp((self.PreviewState.HealthValue or 100) / 100, 0, 1)
+            self.PreviewHealthFill.Size = UDim2.new(1, 0, pct, 0)
+            self.PreviewHealthFill.BackgroundColor3 = self.PreviewState.HealthColor
         end
     end
 end
@@ -1363,11 +1435,11 @@ end
             Parent = mainTabsScroll,
             BackgroundColor3 = Theme.Panel,
             AutoButtonColor = false,
-            Size = UDim2.new(0, 56, 1, 0),
+            Size = UDim2.new(0, 32, 1, 0),
             Font = Enum.Font.GothamBold,
             Text = Icons[name] or string.sub(name, 1, 1),
             TextColor3 = Theme.SubText,
-            TextSize = 18,
+            TextSize = 14,
             ZIndex = 21,
         })
         Corner(tabButton, 999)
@@ -1443,10 +1515,10 @@ end
                 Parent = subTabsScroll,
                 BackgroundColor3 = Theme.Panel,
                 AutoButtonColor = false,
-                Size = UDim2.new(0, math.max(76, #subName * 8), 1, 0),
+                Size = UDim2.new(0, math.max(54, #subName * 7), 1, 0),
                 Text = subName,
                 Font = Enum.Font.GothamBold,
-                TextSize = 12,
+                TextSize = 11,
                 TextColor3 = Theme.Text,
                 Visible = false,
                 ZIndex = 19,
@@ -1465,10 +1537,6 @@ end
                         if stroke then
                             Tween(stroke, 0.12, {Color = Theme.Border})
                         end
-                        local scale = s.Button:FindFirstChild("HoverScale")
-                        if scale then
-                            Tween(scale, 0.12, {Scale = 1})
-                        end
                     end
                 end
 
@@ -1481,10 +1549,6 @@ end
                     local activeStroke = self.Button:FindFirstChildOfClass("UIStroke")
                     if activeStroke then
                         Tween(activeStroke, 0.12, {Color = Theme.Accent})
-                    end
-                    local activeScale = self.Button:FindFirstChild("HoverScale")
-                    if activeScale then
-                        Tween(activeScale, 0.12, {Scale = 1.04})
                     end
                 end
 
@@ -2157,10 +2221,6 @@ end
                     Tween(tStroke, 0.12, {Color = Theme.Border})
                 end
                 t.Button.TextColor3 = Theme.SubText
-                local btnScale = t.Button and t.Button:FindFirstChild("HoverScale")
-                if btnScale then
-                    Tween(btnScale, 0.12, {Scale = 1})
-                end
 
                 for _, s in ipairs(t.SubTabs) do
                     s.Page.Visible = false
@@ -2175,10 +2235,6 @@ end
                 local activeStroke = self.Button:FindFirstChildOfClass("UIStroke")
                 if activeStroke then
                     Tween(activeStroke, 0.12, {Color = Theme.Accent})
-                end
-                local activeScale = self.Button:FindFirstChild("HoverScale")
-                if activeScale then
-                    Tween(activeScale, 0.12, {Scale = 1.05})
                 end
                 self.Button.TextColor3 = Theme.Text
             end
