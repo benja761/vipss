@@ -2640,10 +2640,14 @@ end)
             end)
             right:AddLabel("Sin opciones duplicadas.")
         end
--- >>> INICIO DE LÓGICA FUNCIONAL <<<
-        local isAiming = false
 
-        -- Manejo del Aim Key (Presionar/Soltar)
+       ----------------------------------------------------------------
+        -- FINAL DEL SCRIPT CON LÓGICA DE CHEAT ACTIVA
+        ----------------------------------------------------------------
+        
+        local isAiming = false
+        
+        -- Lógica para detectar la tecla de Aim
         UIS.InputBegan:Connect(function(input, gpe)
             if gpe then return end
             if input.KeyCode == self.CombatState.AimKey then isAiming = true end
@@ -2652,23 +2656,22 @@ end)
             if input.KeyCode == self.CombatState.AimKey then isAiming = false end
         end)
 
-        -- Función de ESP (Box) para que no se quede pegado
-        local function AddESP(player)
-            if player == LocalPlayer then return end
+        -- Función de ESP (Cuadros)
+        local function AddESP(p)
+            if p == LocalPlayer then return end
             local box = Drawing.new("Square")
             box.Visible = false
             box.Thickness = 1
-            box.Filled = false
             
             RunService.RenderStepped:Connect(function()
-                if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                    local hrp = player.Character.HumanoidRootPart
-                    local vector, onScreen = workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local hrp = p.Character.HumanoidRootPart
+                    local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
                     
                     if onScreen and self.PreviewState and self.PreviewState.Box then
-                        local size = Vector2.new(2000 / vector.Z, 2500 / vector.Z)
+                        local size = Vector2.new(2000 / pos.Z, 2500 / pos.Z)
                         box.Size = size
-                        box.Position = Vector2.new(vector.X - size.X / 2, vector.Y - size.Y / 2)
+                        box.Position = Vector2.new(pos.X - size.X / 2, pos.Y - size.Y / 2)
                         box.Color = self.PreviewState.BoxColor or Color3.new(1,1,1)
                         box.Visible = true
                     else
@@ -2680,50 +2683,49 @@ end)
             end)
         end
 
-        for _, p in pairs(Players:GetPlayers()) do AddESP(p) end
+        for _, player in pairs(Players:GetPlayers()) do AddESP(player) end
         Players.PlayerAdded:Connect(AddESP)
 
-        -- Bucle de Aimbot con Smooth
+        -- Motor del Aimbot (Usa tu Smooth y FOV)
         RunService.RenderStepped:Connect(function()
             if isAiming and self.CombatState.AimEnabled then
                 local target = nil
-                local shortestDist = self.CombatState.FOV or 120
-                local mousePos = UIS:GetMouseLocation()
+                local dist = self.CombatState.FOV or 120
+                local mPos = UIS:GetMouseLocation()
 
                 for _, p in pairs(Players:GetPlayers()) do
                     if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("Head") then
                         if self.CombatState.TeamCheck and p.Team == LocalPlayer.Team then continue end
-                        
-                        local pos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(p.Character.Head.Position)
+                        local pPos, onScreen = workspace.CurrentCamera:WorldToViewportPoint(p.Character.Head.Position)
                         if onScreen then
-                            local dist = (Vector2.new(pos.X, pos.Y) - mousePos).Magnitude
-                            if dist < shortestDist then
-                                target = p
-                                shortestDist = dist
-                            end
+                            local d = (Vector2.new(pPos.X, pPos.Y) - mPos).Magnitude
+                            if d < dist then target = p dist = d end
                         end
                     end
                 end
 
                 if target then
-                    local headPos = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
-                    local smoothVal = self.CombatState.Smooth > 0 and self.CombatState.Smooth or 1
-                    local moveX = (headPos.X - mousePos.X) / smoothVal
-                    local moveY = (headPos.Y - mousePos.Y) / smoothVal
-                    
+                    local hPos = workspace.CurrentCamera:WorldToViewportPoint(target.Character.Head.Position)
+                    local s = self.CombatState.Smooth > 0 and self.CombatState.Smooth or 1
                     if mousemoverel then
-                        mousemoverel(moveX, moveY)
+                        mousemoverel((hPos.X - mPos.X)/s, (hPos.Y - mPos.Y)/s)
                     else
                         workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
                     end
                 end
             end
         end)
-        -- >>> FIN DE LÓGICA FUNCIONAL <<<
 
+        -- Esto es lo que ya tenías (mantenlo para que la UI funcione)
+        combatTab:Show()
+        self:ApplySearch("")
+        self:SetAccent(Theme.Accent)
+        self:ApplyBottomTabsVisible(true)
+        self:ApplyUIScale(1)
+        self:ApplyVisualPreset("Default")
         self:UpdateCombatOverlay()
         self:ApplyPreviewVisible(true)
-    end -- Este es el end de la línea 865 aprox.
+    end
     self:BuildDemo()
     return self
 end
