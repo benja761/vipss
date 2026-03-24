@@ -1140,49 +1140,86 @@ function Library:CreateWindow(title)
         self.PreviewBox = box
 
         local topLeftH = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(0, 0, 0, 0),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2),
+            Position = UDim2.new(0, 0, 0, 0),
+            Visible = false,
+            ZIndex = 24,
         })
         local topLeftV = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(0, 0, 0, 0),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18),
+            Position = UDim2.new(0, 0, 0, 0),
+            Visible = false,
+            ZIndex = 24,
         })
+
         local topRightH = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(1, -18, 0, 0),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2),
+            Position = UDim2.new(1, -18, 0, 0),
+            Visible = false,
+            ZIndex = 24,
         })
         local topRightV = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(1, -2, 0, 0),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18),
+            Position = UDim2.new(1, -2, 0, 0),
+            Visible = false,
+            ZIndex = 24,
         })
+
         local bottomLeftH = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(0, 0, 1, -2),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2),
+            Position = UDim2.new(0, 0, 1, -2),
+            Visible = false,
+            ZIndex = 24,
         })
         local bottomLeftV = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(0, 0, 1, -18),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18),
+            Position = UDim2.new(0, 0, 1, -18),
+            Visible = false,
+            ZIndex = 24,
         })
+
         local bottomRightH = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 18, 0, 2), Position = UDim2.new(1, -18, 1, -2),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 18, 0, 2),
+            Position = UDim2.new(1, -18, 1, -2),
+            Visible = false,
+            ZIndex = 24,
         })
         local bottomRightV = Create("Frame", {
-            Parent = box, BorderSizePixel = 0, BackgroundColor3 = Theme.Accent,
-            Size = UDim2.new(0, 2, 0, 18), Position = UDim2.new(1, -2, 1, -18),
-            Visible = false, ZIndex = 24,
+            Parent = box,
+            BorderSizePixel = 0,
+            BackgroundColor3 = Theme.Accent,
+            Size = UDim2.new(0, 2, 0, 18),
+            Position = UDim2.new(1, -2, 1, -18),
+            Visible = false,
+            ZIndex = 24,
         })
 
         self.PreviewCornerLines = {
-            topLeftH, topLeftV, topRightH, topRightV,
-            bottomLeftH, bottomLeftV, bottomRightH, bottomRightV
+            topLeftH, topLeftV,
+            topRightH, topRightV,
+            bottomLeftH, bottomLeftV,
+            bottomRightH, bottomRightV
         }
 
         local boxStroke = Stroke(box, Theme.Accent, 2, 0)
@@ -1217,8 +1254,8 @@ function Library:CreateWindow(title)
         local nameLabel = Create("TextLabel", {
             Parent = overlay,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.20, 0, 0.06, 0),
-            Size = UDim2.new(0.60, 0, 0, 20),
+            Position = UDim2.new(boxX - 0.08, 0, boxY - 0.07, 0),
+            Size = UDim2.new(boxW + 0.16, 0, 0, 20),
             Font = Enum.Font.GothamBold,
             Text = LocalPlayer.Name,
             TextColor3 = Theme.Text,
@@ -1231,8 +1268,8 @@ function Library:CreateWindow(title)
         local distanceLabel = Create("TextLabel", {
             Parent = overlay,
             BackgroundTransparency = 1,
-            Position = UDim2.new(0.20, 0, 0.88, 0),
-            Size = UDim2.new(0.60, 0, 0, 18),
+            Position = UDim2.new(boxX - 0.08, 0, boxY + boxH + 0.01, 0),
+            Size = UDim2.new(boxW + 0.16, 0, 0, 18),
             Font = Enum.Font.GothamBold,
             Text = "23m",
             TextColor3 = Theme.SubText,
@@ -1257,45 +1294,25 @@ function Library:CreateWindow(title)
 
         if self.PreviewBox then
             local showBox = self.PreviewState.Box
+            local cornerMode = self.PreviewState.Mode == "Corner"
+
             self.PreviewBox.Visible = showBox
 
             if self.PreviewBoxStroke then
                 self.PreviewBoxStroke.Color = self.PreviewState.BoxColor
-                self.PreviewBoxStroke.Enabled = self.PreviewState.Mode ~= "Corner"
-                self.PreviewBoxStroke.Thickness = 2
+                self.PreviewBoxStroke.Thickness = cornerMode and 0 or 2
+                self.PreviewBoxStroke.Transparency = cornerMode and 1 or 0
             end
 
             if self.PreviewCornerLines then
-                local showCorners = showBox and self.PreviewState.Mode == "Corner"
                 for _, line in ipairs(self.PreviewCornerLines) do
-                    line.Visible = showCorners
-                    line.BackgroundColor3 = self.PreviewState.BoxColor
+                    if line and line.Parent then
+                        line.Visible = showBox and cornerMode
+                        line.BackgroundColor3 = self.PreviewState.BoxColor
+                    end
                 end
             end
         end
-
-        if self.PreviewNameLabel then
-            self.PreviewNameLabel.Visible = self.PreviewState.Name
-            self.PreviewNameLabel.Text = LocalPlayer.Name
-            self.PreviewNameLabel.TextSize = self.PreviewState.NameSize
-            self.PreviewNameLabel.TextColor3 = self.PreviewState.NameColor
-        end
-
-        if self.PreviewDistanceLabel then
-            self.PreviewDistanceLabel.Visible = self.PreviewState.Distance
-            self.PreviewDistanceLabel.Text = tostring(self.PreviewState.DistanceValue) .. "m"
-            self.PreviewDistanceLabel.TextSize = self.PreviewState.DistanceSize
-            self.PreviewDistanceLabel.TextColor3 = self.PreviewState.DistanceColor
-        end
-
-        if self.PreviewHealthBack and self.PreviewHealthFill then
-            self.PreviewHealthBack.Visible = self.PreviewState.Health
-            local pct = math.clamp((self.PreviewState.HealthValue or 100) / 100, 0, 1)
-            self.PreviewHealthFill.Size = UDim2.new(1, 0, pct, 0)
-            self.PreviewHealthFill.BackgroundColor3 = self.PreviewState.HealthColor
-        end
-    end
-end
 
         if self.PreviewNameLabel then
             self.PreviewNameLabel.Visible = self.PreviewState.Name
@@ -2677,3 +2694,4 @@ end)
 end
 
 return Library
+
