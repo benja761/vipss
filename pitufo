@@ -2,20 +2,20 @@
 repeat task.wait() until game:IsLoaded()
 
 local parent = (gethui and gethui()) or game:GetService("CoreGui")
-local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
--- LIMPIAR
-local old = parent:FindFirstChild("SPAM_PITUFO")
+-- BORRAR ANTERIOR
+local old = parent:FindFirstChild("PITUFO_SPAM_REAL")
 if old then old:Destroy() end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "SPAM_PITUFO"
+gui.Name = "PITUFO_SPAM_REAL"
 gui.Parent = parent
 gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
 
 -- FUNCION RGB
-local function getRGB(t)
+local function rgb(t)
 	return Color3.fromRGB(
 		math.floor(math.sin(t)*127+128),
 		math.floor(math.sin(t+2)*127+128),
@@ -23,10 +23,10 @@ local function getRGB(t)
 	)
 end
 
--- SPAM MASIVO
+-- SPAM REAL (MUCHO MÁS AGRESIVO)
 task.spawn(function()
 	while gui.Parent do
-		for i = 1, 15 do -- cantidad por tick (sube esto si quieres MÁS loco)
+		for i = 1, 40 do -- MUCHOS por ciclo
 			
 			local txt = Instance.new("TextLabel")
 			txt.Parent = gui
@@ -35,11 +35,11 @@ task.spawn(function()
 			txt.Font = Enum.Font.GothamBlack
 			txt.TextScaled = true
 			
-			-- tamaño random
-			local size = math.random(50, 200)
+			-- tamaño random grande
+			local size = math.random(80, 250)
 			txt.Size = UDim2.new(0, size*4, 0, size)
-			
-			-- posición random
+
+			-- posicion random TODA pantalla
 			txt.Position = UDim2.new(
 				math.random(),
 				0,
@@ -47,59 +47,50 @@ task.spawn(function()
 				0
 			)
 
-			-- rotación random
-			txt.Rotation = math.random(-30, 30)
+			-- rotacion
+			txt.Rotation = math.random(-45, 45)
 
-			-- color RGB dinámico
-			local t = tick()
-			txt.TextColor3 = getRGB(t)
+			-- color RGB
+			txt.TextColor3 = rgb(tick())
 
-			-- animación
-			local tween = TweenService:Create(txt, TweenInfo.new(0.4), {
-				TextTransparency = 1,
-				Position = txt.Position + UDim2.new(0, math.random(-50,50), 0, math.random(-50,50))
-			})
-			
-			tween:Play()
-
-			tween.Completed:Connect(function()
-				txt:Destroy()
+			-- desaparición rápida
+			task.delay(0.3, function()
+				if txt then txt:Destroy() end
 			end)
 		end
 		
-		task.wait(0.03) -- velocidad (bájalo para MÁS spam)
+		task.wait() -- LO MÁS RÁPIDO POSIBLE
 	end
 end)
 
--- EFECTO FLASH GLOBAL
+-- FLASH CONSTANTE (pantallazos)
 task.spawn(function()
 	while gui.Parent do
 		local flash = Instance.new("Frame")
 		flash.Parent = gui
 		flash.Size = UDim2.new(1,0,1,0)
-		flash.BackgroundColor3 = getRGB(tick())
-		flash.BackgroundTransparency = 0.9
+		flash.BackgroundColor3 = rgb(tick())
+		flash.BackgroundTransparency = 0.85
 		
-		TweenService:Create(flash, TweenInfo.new(0.2), {
-			BackgroundTransparency = 1
-		}):Play()
+		task.delay(0.05, function()
+			if flash then flash:Destroy() end
+		end)
 		
-		task.wait(0.1)
-		flash:Destroy()
+		task.wait(0.05)
 	end
 end)
 
--- TEXTO CENTRAL FIJO (MÁS IMPACTO)
+-- TEXTO CENTRAL LOCO (SIEMPRE VISIBLE)
 local center = Instance.new("TextLabel")
 center.Parent = gui
-center.Size = UDim2.new(0, 800, 0, 200)
-center.Position = UDim2.new(0.5, -400, 0.5, -100)
+center.Size = UDim2.new(0, 1000, 0, 250)
+center.Position = UDim2.new(0.5, -500, 0.5, -125)
 center.BackgroundTransparency = 1
 center.Text = "ME QUERIAS ESTAFAR PITUFO?"
 center.TextScaled = true
 center.Font = Enum.Font.GothamBlack
 
 RunService.RenderStepped:Connect(function()
-	center.TextColor3 = getRGB(tick())
-	center.Rotation = math.sin(tick()*5)*5
+	center.TextColor3 = rgb(tick())
+	center.Rotation = math.sin(tick()*10)*10
 end)
