@@ -1,3 +1,4 @@
+
 -- Valary-style safe UI library for Roblox Studio
 -- Visual framework only. No exploit or cheat logic.
 
@@ -1231,7 +1232,10 @@ function Library:CreateWindow(title)
     end
 
     function self:UpdatePreviewESP()
-        if not self.PreviewPanel or not self.PreviewViewport then
+     
+
+
+     if not self.PreviewPanel or not self.PreviewViewport then
             return
         end
 
@@ -1243,12 +1247,23 @@ function Library:CreateWindow(title)
         end
 
         if self.PreviewBox then
-            self.PreviewBox.Visible = self.PreviewState.Box
-        end
+    local showBox = self.PreviewState.Box
+    self.PreviewBox.Visible = showBox
 
-        if self.PreviewBoxStroke then
-            self.PreviewBoxStroke.Color = self.PreviewState.BoxColor
+    if self.PreviewBoxStroke then
+        self.PreviewBoxStroke.Color = self.PreviewState.BoxColor
+
+        if self.PreviewState.Mode == "Corner" then
+            self.PreviewBoxStroke.Thickness = 3
+            self.PreviewBox.BackgroundTransparency = 1
+            self.PreviewBox.Size = UDim2.new(0.50, 0, 0.68, 0)
+        else
+            self.PreviewBoxStroke.Thickness = 2
+            self.PreviewBox.BackgroundTransparency = 1
+            self.PreviewBox.Size = UDim2.new(0.50, 0, 0.68, 0)
         end
+    end
+end
 
         if self.PreviewNameLabel then
             self.PreviewNameLabel.Visible = self.PreviewState.Name
@@ -2419,9 +2434,11 @@ function Library:CreateWindow(title)
 
             local right = players:AddSection("ESP Settings", "right")
             right:AddToggle("ESP Enabled", false)
-            right:AddDropdown("ESP Mode", {"Box", "Corner"}, "Box", function(v)
-                self.PreviewState.Mode = v
-            end)
+           right:AddDropdown("ESP Mode", {"Box", "Corner"}, "Box", function(v)
+    self.PreviewState.Mode = v
+    self.PreviewState.Box = true
+    self:UpdatePreviewESP()
+end)
             right:AddToggle("Show Box", false, function(v)
                 self.PreviewState.Box = v
                 self:UpdatePreviewESP()
@@ -2649,19 +2666,49 @@ Library.AimKey = Enum.KeyCode.E
 Library.AimActive = false
 
 UIS.InputBegan:Connect(function(input, gp)
-    if gp then return end
+    if gp then
+        return
+    end
 
-    -- TOGGLE MENU
     if input.KeyCode == self.HideKey then
         self.MenuVisible = not self.MenuVisible
         main.Visible = self.MenuVisible
+
+        if self.PreviewPanel then
+            self.PreviewPanel.Visible = self.MenuVisible and self.PreviewState.Visible
+        end
+
+        if self.CombatGui then
+            self.CombatGui.Visible = true
+        end
 
         if self.MenuVisible then
             self:PlayMenuSound("open")
         else
             self:PlayMenuSound("close")
         end
+        return
     end
+
+    if self.CombatState and input.KeyCode == self.CombatState.AimKey then
+        self.CombatState.AimEnabled = not self.CombatState.AimEnabled
+        self.CombatState.StatusText = self.CombatState.AimEnabled and "AIM ON" or "AIM OFF"
+
+        if self.Notify then
+            self:Notify("Aim " .. (self.CombatState.AimEnabled and "Activado" or "Desactivado"))
+        end
+
+        if self.UpdateCombatOverlay then
+            self:UpdateCombatOverlay()
+        end
+    end
+end)
+
+
+
+
+
+
 
     -- AIM KEY (AQUÍ MISMO)
     if input.KeyCode == self.CombatState.AimKey then
