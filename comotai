@@ -1,4 +1,3 @@
-
 -- Valary-style safe UI library for Roblox Studio
 -- Visual framework only. No exploit or cheat logic.
 
@@ -364,14 +363,14 @@ function Library:CreateWindow(title)
     uiScale.Parent = gui
     self.UIScale = uiScale
 
-  local main = Create("Frame", {
-    Parent = gui,
-    BackgroundColor3 = Theme.Main,
-    BorderSizePixel = 0,
-    Size = UDim2.new(0, 790, 0, 540),
-    Position = UDim2.new(0.5, -395, 0.5, -270),
-    ClipsDescendants = false,
-})
+    local main = Create("Frame", {
+        Parent = gui,
+        BackgroundColor3 = Theme.Main,
+        BorderSizePixel = 0,
+        Size = UDim2.new(0, 760, 0, 500),
+        Position = UDim2.new(0.5, -380, 0.5, -250),
+        ClipsDescendants = false,
+    })
     self.Main = main
     Corner(main, 12)
     Stroke(main, Theme.Border, 1)
@@ -468,13 +467,13 @@ function Library:CreateWindow(title)
         ZIndex = 3,
     })
 
-   local searchFrame = Create("Frame", {
-    Parent = main,
-    BackgroundColor3 = Theme.Panel,
-    Position = UDim2.new(0, 12, 0, 54),
-    Size = UDim2.new(0, 265, 0, 36),
-    ZIndex = 3,
-})
+    local searchFrame = Create("Frame", {
+        Parent = main,
+        BackgroundColor3 = Theme.Panel,
+        Position = UDim2.new(0, 12, 0, 54),
+        Size = UDim2.new(0, 260, 0, 34),
+        ZIndex = 3,
+    })
     Corner(searchFrame, 8)
     local searchStroke = Stroke(searchFrame, Theme.Border, 1)
 
@@ -495,28 +494,28 @@ function Library:CreateWindow(title)
     })
     setHover(searchFrame, Theme.Panel, Theme.Panel2, searchStroke)
 
-   local pages = Create("Frame", {
-    Parent = main,
-    BackgroundTransparency = 1,
-    Position = UDim2.new(0, 12, 0, 96),
-    Size = UDim2.new(1, -24, 1, -168),
-    ClipsDescendants = true,
-    ZIndex = 2,
-})
-self.Pages = pages
+    local pages = Create("Frame", {
+        Parent = main,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, 96),
+        Size = UDim2.new(1, -24, 1, -160),
+        ClipsDescendants = true,
+        ZIndex = 2,
+    })
+    self.Pages = pages
 
-local mainTabsHolder = Create("Frame", {
-    Parent = main,
-    BackgroundColor3 = Theme.Panel,
-    Size = UDim2.new(0, 260, 0, 42),
-    Position = UDim2.new(0.5, -130, 1, -54),
-    ZIndex = 20,
-    ClipsDescendants = true,
-})
-self.MainTabsHolder = mainTabsHolder
-Corner(mainTabsHolder, 999)
-Stroke(mainTabsHolder, Theme.Border, 1)
-Padding(mainTabsHolder, 8, 8, 6, 6)
+    local mainTabsHolder = Create("Frame", {
+        Parent = main,
+        BackgroundColor3 = Theme.Panel,
+        Size = UDim2.new(0, 210, 0, 42),
+        Position = UDim2.new(0.5, -105, 1, 28),
+        ZIndex = 20,
+        ClipsDescendants = true,
+    })
+    self.MainTabsHolder = mainTabsHolder
+    Corner(mainTabsHolder, 999)
+    Stroke(mainTabsHolder, Theme.Border, 1)
+    Padding(mainTabsHolder, 8, 8, 6, 6)
 
     local mainTabsScroll = Create("ScrollingFrame", {
         Parent = mainTabsHolder,
@@ -539,19 +538,19 @@ Padding(mainTabsHolder, 8, 8, 6, 6)
         Padding = UDim.new(0, 8),
     })
 
-  local subTabHolder = Create("Frame", {
-    Parent = main,
-    BackgroundColor3 = Theme.Panel,
-    Size = UDim2.new(0, 360, 0, 38),
-    Position = UDim2.new(0.5, -180, 1, -100),
-    ZIndex = 18,
-    Visible = false,
-    ClipsDescendants = true,
-})
-self.SubTabHolder = subTabHolder
-Corner(subTabHolder, 999)
-Stroke(subTabHolder, Theme.Border, 1)
-Padding(subTabHolder, 8, 8, 6, 6)
+    local subTabHolder = Create("Frame", {
+        Parent = main,
+        BackgroundColor3 = Theme.Panel,
+        Size = UDim2.new(0, 320, 0, 40),
+        Position = UDim2.new(0.5, -160, 1, -4),
+        ZIndex = 18,
+        Visible = false,
+        ClipsDescendants = true,
+    })
+    self.SubTabHolder = subTabHolder
+    Corner(subTabHolder, 999)
+    Stroke(subTabHolder, Theme.Border, 1)
+    Padding(subTabHolder, 8, 8, 6, 6)
 
     local subTabsScroll = Create("ScrollingFrame", {
         Parent = subTabHolder,
@@ -1270,12 +1269,12 @@ end
         self:PlayMenuSound("pop")
 
         if self._SmoothOpen then
-    Tween(main, 0.18, {
-        Size = minimized and UDim2.new(0, 790, 0, 96) or UDim2.new(0, 790, 0, 540)
-    })
-else
-    main.Size = minimized and UDim2.new(0, 790, 0, 96) or UDim2.new(0, 790, 0, 540)
-end
+            Tween(main, 0.18, {
+                Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
+            })
+        else
+            main.Size = minimized and UDim2.new(0, 760, 0, 96) or UDim2.new(0, 760, 0, 500)
+        end
 
         pages.Visible = not minimized
         searchFrame.Visible = not minimized
@@ -2587,7 +2586,7 @@ end)
                 self:RefreshCharacterPreview()
             end)
             right:AddButton("Show Notification", function()
-                self:Notify("Settings tab working")local main = Create("Frame", {
+                self:Notify("Settings tab working")
             end)
             right:AddLabel("Sin opciones duplicadas.")
         end
