@@ -1,69 +1,112 @@
--- PITUFO WX7: MODO MÁXIMA MOLESTIA (XENO OPTIMIZED)
--- ADVERTENCIA: Este script satura la pantalla y el audio.
+-- XENO SCRIPT PRO VISUAL (PESADO PERO SEGURO)
 
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local SoundService = game:GetService("SoundService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
 
 local player = Players.LocalPlayer
-local pgui = player:WaitForChild("PlayerGui")
 
--- 1. CREACIÓN DEL SONIDO IRRITANTE (Pitch alto)
-local beep = Instance.new("Sound")
-beep.SoundId = "rbxassetid://4612375231" -- Alarma de error
-beep.Volume = 5
-beep.PlaybackSpeed = 1.5 -- Más agudo y molesto
-beep.Looped = true
-beep.Parent = SoundService
-beep:Play()
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- 2. INTERFAZ VISUAL INVASIVA
-local sg = Instance.new("ScreenGui", pgui)
-sg.Name = "ANN_PITUFO"
-sg.IgnoreGuiInset = true
+-- BLUR EFECTO
+local blur = Instance.new("BlurEffect")
+blur.Size = 0
+blur.Parent = Lighting
 
-local mainFrame = Instance.new("Frame", sg)
-mainFrame.Size = UDim2.new(1, 0, 1, 0)
-mainFrame.BackgroundTransparency = 0.5
-mainFrame.BackgroundColor3 = Color3.new(1, 0, 0) -- Rojo inicial
+TweenService:Create(blur, TweenInfo.new(0.5), {Size = 25}):Play()
 
-local text = Instance.new("TextLabel", mainFrame)
-text.Size = UDim2.new(0.8, 0, 0.4, 0)
-text.Position = UDim2.new(0.1, 0, 0.3, 0)
-text.BackgroundTransparency = 1
-text.Text = "NOS QUERIAS ESTAFAR? PITUFO?"
-text.TextColor3 = Color3.new(1, 1, 1)
-text.TextScaled = true
-text.Font = Enum.Font.GothamBold
+-- FRAME PRINCIPAL
+local Frame = Instance.new("Frame")
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 500, 0, 160)
+Frame.Position = UDim2.new(0.5, -250, 0.5, -80)
+Frame.BackgroundColor3 = Color3.fromRGB(15,15,20)
+Frame.BorderSizePixel = 0
 
--- 3. BUCLE DE MOLESTIA EXTREMA (RenderStepped para que sea instantáneo)
-task.spawn(function()
-    local colors = {Color3.new(1,0,0), Color3.new(1,1,1), Color3.new(0,0,0), Color3.new(1,1,0)}
-    local i = 1
-    
-    while true do
-        -- Cambiar color de fondo (Flash)
-        mainFrame.BackgroundColor3 = colors[i]
-        text.TextColor3 = colors[i == 1 and 2 or 1]
-        
-        -- Mover el texto a posiciones aleatorias para marear
-        text.Position = UDim2.new(math.random(5, 15)/100, 0, math.random(20, 50)/100, 0)
-        
-        -- Spam masivo en consola (Diferentes tipos)
-        print("🚨 PITUFO DETECTADO 🚨")
-        warn("⚠️ NOS QUERIAS ESTAFAR? ⚠️")
-        error("❌ ERROR DE SISTEMA: PITUFO WX7 ❌")
-        
-        -- Vibración de cámara (Opcional, muy molesto)
-        if player.Character and player.Character:FindFirstChild("Humanoid") then
-            player.Character.Humanoid.CameraOffset = Vector3.new(math.random(-1,1), math.random(-1,1), math.random(-1,1))
-        end
-        
-        i = i % #colors + 1
-        task.wait(0.1) -- Velocidad de parpadeo (Muy rápido)
-    end
+-- GLOW
+local UIStroke = Instance.new("UIStroke", Frame)
+UIStroke.Thickness = 3
+UIStroke.Color = Color3.fromRGB(255,0,0)
+
+-- TEXTO
+local TextLabel = Instance.new("TextLabel")
+TextLabel.Parent = Frame
+TextLabel.Size = UDim2.new(1,0,1,0)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Text = "ME QUERIAS ESTAFAR PITUFO?"
+TextLabel.TextScaled = true
+TextLabel.Font = Enum.Font.GothamBlack
+TextLabel.TextColor3 = Color3.fromRGB(255,255,255)
+
+-- RGB ANIMADO
+RunService.RenderStepped:Connect(function()
+	local t = tick()
+	local r = math.sin(t)*127+128
+	local g = math.sin(t+2)*127+128
+	local b = math.sin(t+4)*127+128
+	
+	UIStroke.Color = Color3.fromRGB(r,g,b)
+	TextLabel.TextColor3 = Color3.fromRGB(r,g,b)
 end)
 
--- 4. MENSAJE FINAL AL EJECUTAR
-warn("EL SCRIPT 'PITUFO WX7' HA ENTRADO EN MODO DE DEFENSA.")
+-- PARTÍCULAS (FAKE VISUAL)
+for i = 1, 30 do
+	task.spawn(function()
+		local dot = Instance.new("Frame")
+		dot.Parent = Frame
+		dot.Size = UDim2.new(0, 4, 0, 4)
+		dot.BackgroundColor3 = Color3.fromRGB(255,0,0)
+		dot.BorderSizePixel = 0
+		
+		while dot.Parent do
+			dot.Position = UDim2.new(math.random(),0,1,0)
+			
+			local tween = TweenService:Create(dot, TweenInfo.new(1 + math.random()), {
+				Position = UDim2.new(math.random(),0,0,0),
+				BackgroundTransparency = 1
+			})
+			
+			tween:Play()
+			tween.Completed:Wait()
+			
+			dot.BackgroundTransparency = 0
+		end
+	end)
+end
+
+-- ANIMACIÓN POP
+Frame.Size = UDim2.new(0, 0, 0, 0)
+TweenService:Create(Frame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {
+	Size = UDim2.new(0, 500, 0, 160)
+}):Play()
+
+-- SONIDO
+local sound = Instance.new("Sound")
+sound.Parent = Frame
+sound.SoundId = "rbxassetid://9118823103"
+sound.Volume = 2
+sound:Play()
+
+-- BOTÓN CERRAR
+local Close = Instance.new("TextButton")
+Close.Parent = Frame
+Close.Size = UDim2.new(0,30,0,30)
+Close.Position = UDim2.new(1,-35,0,5)
+Close.Text = "X"
+Close.BackgroundColor3 = Color3.fromRGB(255,0,0)
+Close.TextColor3 = Color3.new(1,1,1)
+
+Close.MouseButton1Click:Connect(function()
+	TweenService:Create(Frame, TweenInfo.new(0.3), {
+		Size = UDim2.new(0,0,0,0)
+	}):Play()
+	
+	TweenService:Create(blur, TweenInfo.new(0.3), {Size = 0}):Play()
+	
+	task.wait(0.3)
+	ScreenGui:Destroy()
+end)
