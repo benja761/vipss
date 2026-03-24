@@ -248,6 +248,10 @@ local function cloneCharacter(viewport)
     return clone
 end
 
+function Library:CreateWindow(title)
+    local self = setmetatable({}, Library)
+    self.Title = title or "Window"
+
     self.Tabs = {}
     self.Flags = {}
     self.CurrentTab = nil
@@ -611,6 +615,12 @@ end
         ZIndex = 3,
     })
 
+    local searchFrame = Create("Frame", {
+        Parent = main,
+        BackgroundColor3 = Theme.Panel,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 12, 0, 54),
+        Size = UDim2.new(1, -24, 0, 34),
         ZIndex = 3,
     })
     Corner(searchFrame, 8)
@@ -644,15 +654,6 @@ end
     self.Pages = pages
     
     local mainTabsHolder = Create("Frame", {
-        Parent = main,
-        BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 210, 0, 42),
-        Position = UDim2.new(0.5, -105, 1, 18),
-        ZIndex = 20,
-        ClipsDescendants = true,
-    })
-    self.M
-local mainTabsHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
         Size = UDim2.new(0, 210, 0, 42),
@@ -980,7 +981,10 @@ local mainTabsHolder = Create("Frame", {
         end)
         
         if #self.Tabs == 1 then
-            tabBtn.MouseButton1Click:Fire()
+            self.CurrentTab = newTab
+            newTab.Page.Visible = true
+            newTab.Page.Position = UDim2.new(0, 0, 0, 0)
+            tabBtn.TextColor3 = Theme.Text
         end
         
         return newTab
@@ -1056,6 +1060,12 @@ local mainTabsHolder = Create("Frame", {
     return self
 end
 
+function Library:CreateSection(tab, name)
+    local section = Create("Frame", {
+        Parent = tab.Content,
+        BackgroundColor3 = Theme.Panel,
+        Size = UDim2.new(1, 0, 0, 40),
+        AutomaticSize = Enum.AutomaticSize.Y,
     })
     Corner(section, 8)
     Stroke(section, Theme.Border, 1)
