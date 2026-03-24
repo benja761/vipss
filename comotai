@@ -508,7 +508,7 @@ function Library:CreateWindow(title)
         Parent = main,
         BackgroundColor3 = Theme.Panel,
         Size = UDim2.new(0, 210, 0, 42),
-        Position = UDim2.new(0.5, -105, 1, 28),
+        Position = UDim2.new(0.5, -105, 1, -18),
         ZIndex = 20,
         ClipsDescendants = true,
     })
@@ -541,8 +541,8 @@ function Library:CreateWindow(title)
     local subTabHolder = Create("Frame", {
         Parent = main,
         BackgroundColor3 = Theme.Panel,
-        Size = UDim2.new(0, 320, 0, 40),
-        Position = UDim2.new(0.5, -160, 1, -4),
+        Size = UDim2.new(0, 260, 0, 42),
+        Position = UDim2.new(0.5, -130, 1, -60),
         ZIndex = 18,
         Visible = false,
         ClipsDescendants = true,
