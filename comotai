@@ -318,7 +318,7 @@ function Library:CreateWindow(title)
         HitMarkerVisible = false,
         HitMarkerSize = 10,
         StatusTextVisible = true,
-        StatusText = "READY",
+        StatusText = "",
         StatusTextColor = Theme.Text,
         PulseVisible = false,
         PulseSize = 60,
