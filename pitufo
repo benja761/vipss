@@ -319,10 +319,10 @@ body.Parent = main
 
 local pagesHolder = Instance.new("Frame")
 pagesHolder.BackgroundTransparency = 1
-pagesHolder.Size = UDim2.new(1, -308, 1, -78)
+pagesHolder.Size = UDim2.new(1, 0, 1, -78)
 pagesHolder.Parent = body
 
-local previewCard = createFrame(body, UDim2.fromOffset(288, 540), UDim2.new(1, -288, 0, 0), Theme.BG2, 7, 14)
+local previewCard = createFrame(root, UDim2.fromOffset(288, 540), UDim2.new(1, 10, 0, 86), Theme.BG2, 7, 14)
 addTextureOverlay(previewCard, 0.965)
 
 local previewTitle = Instance.new("TextLabel")
@@ -405,26 +405,57 @@ local _, statStatus = statRow("Status", "Loaded")
 local tabsWrap = Instance.new("Frame")
 tabsWrap.BackgroundTransparency = 1
 tabsWrap.Position = UDim2.new(0, 0, 1, -70)
-tabsWrap.Size = UDim2.new(1, -308, 0, 62)
+tabsWrap.Size = UDim2.new(1, 0, 0, 62)
 tabsWrap.ZIndex = 8
 tabsWrap.Parent = body
 
-local tabsBar = createFrame(tabsWrap, UDim2.fromOffset(500, 46), UDim2.new(0, 0, 0, 8), Theme.BG2, 10, 14)
-addTextureOverlay(tabsBar, 0.965)
+local tabsShell = createFrame(tabsWrap, UDim2.new(1, 0, 0, 46), UDim2.new(0, 0, 0, 8), Theme.BG2, 10, 14)
+addTextureOverlay(tabsShell, 0.965)
 
-local subTabsBar = createFrame(tabsWrap, UDim2.fromOffset(428, 46), UDim2.new(1, -428, 0, 8), Theme.BG2, 10, 14)
-addTextureOverlay(subTabsBar, 0.965)
+local tabsShellLayout = Instance.new("UIListLayout")
+tabsShellLayout.FillDirection = Enum.FillDirection.Horizontal
+tabsShellLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+tabsShellLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+tabsShellLayout.Padding = UDim.new(0, 8)
+tabsShellLayout.Parent = tabsShell
+
+local tabsPadding = Instance.new("UIPadding")
+tabsPadding.PaddingLeft = UDim.new(0, 10)
+tabsPadding.PaddingRight = UDim.new(0, 10)
+tabsPadding.Parent = tabsShell
+
+local tabsBar = Instance.new("Frame")
+tabsBar.Name = "MainTabsBar"
+tabsBar.BackgroundTransparency = 1
+tabsBar.Size = UDim2.fromOffset(0, 46)
+tabsBar.AutomaticSize = Enum.AutomaticSize.X
+tabsBar.ZIndex = 11
+tabsBar.Parent = tabsShell
 
 local tabsLayout = Instance.new("UIListLayout")
 tabsLayout.FillDirection = Enum.FillDirection.Horizontal
-tabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+tabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 tabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 tabsLayout.Padding = UDim.new(0, 8)
 tabsLayout.Parent = tabsBar
 
+local tabsGroupSpacer = Instance.new("Frame")
+tabsGroupSpacer.BackgroundTransparency = 1
+tabsGroupSpacer.Size = UDim2.fromOffset(12, 1)
+tabsGroupSpacer.ZIndex = 11
+tabsGroupSpacer.Parent = tabsShell
+
+local subTabsBar = Instance.new("Frame")
+subTabsBar.Name = "SubTabsBar"
+subTabsBar.BackgroundTransparency = 1
+subTabsBar.Size = UDim2.fromOffset(0, 46)
+subTabsBar.AutomaticSize = Enum.AutomaticSize.X
+subTabsBar.ZIndex = 11
+subTabsBar.Parent = tabsShell
+
 local subTabsLayout = Instance.new("UIListLayout")
 subTabsLayout.FillDirection = Enum.FillDirection.Horizontal
-subTabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+subTabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 subTabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 subTabsLayout.Padding = UDim.new(0, 6)
 subTabsLayout.Parent = subTabsBar
@@ -1172,7 +1203,7 @@ local function rebuildSubTabs(pageName: string)
 	currentSub = items[1]
 
 	for _, tabName in ipairs(items) do
-		subTabButtons[tabName] = makeTabButton(subTabsBar, tabName, 104, function()
+		subTabButtons[tabName] = makeTabButton(subTabsBar, tabName, 82, function()
 			currentSub = tabName
 			updateSubButtons()
 			applySearch(searchBox.Text)
