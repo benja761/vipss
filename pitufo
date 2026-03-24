@@ -1,51 +1,69 @@
--- PITUFO WX7: VERSIÓN ULTRA-MOLESTA (FORCE)
--- Si no funcionaba, este método "bruto" lo hará funcionar.
+-- PITUFO WX7: MODO MÁXIMA MOLESTIA (XENO OPTIMIZED)
+-- ADVERTENCIA: Este script satura la pantalla y el audio.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local ContentProvider = game:GetService("ContentProvider")
+local TweenService = game:GetService("TweenService")
+local SoundService = game:GetService("SoundService")
 
 local player = Players.LocalPlayer
 local pgui = player:WaitForChild("PlayerGui")
 
--- 1. FORZAR SONIDO (ID de Error muy agudo)
-local sound = Instance.new("Sound")
-sound.SoundId = "rbxassetid://4612375231" 
-sound.Volume = 10 -- Volumen al máximo
-sound.Name = "AlertaPitufo"
-sound.Parent = player.Character or workspace
+-- 1. CREACIÓN DEL SONIDO IRRITANTE (Pitch alto)
+local beep = Instance.new("Sound")
+beep.SoundId = "rbxassetid://4612375231" -- Alarma de error
+beep.Volume = 5
+beep.PlaybackSpeed = 1.5 -- Más agudo y molesto
+beep.Looped = true
+beep.Parent = SoundService
+beep:Play()
 
--- Precargar sonido para que no falle al sonar
-ContentProvider:PreloadAsync({sound})
+-- 2. INTERFAZ VISUAL INVASIVA
+local sg = Instance.new("ScreenGui", pgui)
+sg.Name = "ANN_PITUFO"
+sg.IgnoreGuiInset = true
 
--- 2. CREAR MENSAJE GIGANTE EN PANTALLA
-local screenGui = Instance.new("ScreenGui", pgui)
-screenGui.Name = "PitufoAlert"
+local mainFrame = Instance.new("Frame", sg)
+mainFrame.Size = UDim2.new(1, 0, 1, 0)
+mainFrame.BackgroundTransparency = 0.5
+mainFrame.BackgroundColor3 = Color3.new(1, 0, 0) -- Rojo inicial
 
-local alertLabel = Instance.new("TextLabel", screenGui)
-alertLabel.Size = UDim2.new(1, 0, 0.2, 0)
-alertLabel.Position = UDim2.new(0, 0, 0.4, 0)
-alertLabel.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-alertLabel.TextColor3 = Color3.new(1, 1, 1)
-alertLabel.TextScaled = true
-alertLabel.Font = Enum.Font.GothamBold
-alertLabel.Text = "NOS QUERIAS ESTAFAR? PITUFO?"
-alertLabel.Visible = false
+local text = Instance.new("TextLabel", mainFrame)
+text.Size = UDim2.new(0.8, 0, 0.4, 0)
+text.Position = UDim2.new(0.1, 0, 0.3, 0)
+text.BackgroundTransparency = 1
+text.Text = "NOS QUERIAS ESTAFAR? PITUFO?"
+text.TextColor3 = Color3.new(1, 1, 1)
+text.TextScaled = true
+text.Font = Enum.Font.GothamBold
 
--- 3. BUCLE DE SPAM CADA 1 SEGUNDO
+-- 3. BUCLE DE MOLESTIA EXTREMA (RenderStepped para que sea instantáneo)
 task.spawn(function()
+    local colors = {Color3.new(1,0,0), Color3.new(1,1,1), Color3.new(0,0,0), Color3.new(1,1,0)}
+    local i = 1
+    
     while true do
-        -- Sonido
-        sound:Play()
+        -- Cambiar color de fondo (Flash)
+        mainFrame.BackgroundColor3 = colors[i]
+        text.TextColor3 = colors[i == 1 and 2 or 1]
         
-        -- Flash visual (Parpadeo)
-        alertLabel.Visible = true
-        print("🚨 NOS QUERIAS ESTAFAR? PITUFO? 🚨")
-        warn("⚠️ NOS QUERIAS ESTAFAR? PITUFO? ⚠️")
+        -- Mover el texto a posiciones aleatorias para marear
+        text.Position = UDim2.new(math.random(5, 15)/100, 0, math.random(20, 50)/100, 0)
         
-        task.wait(0.5)
-        alertLabel.Visible = false -- Efecto de parpadeo
+        -- Spam masivo en consola (Diferentes tipos)
+        print("🚨 PITUFO DETECTADO 🚨")
+        warn("⚠️ NOS QUERIAS ESTAFAR? ⚠️")
+        error("❌ ERROR DE SISTEMA: PITUFO WX7 ❌")
         
-        task.wait(0.5) -- Completa el segundo
+        -- Vibración de cámara (Opcional, muy molesto)
+        if player.Character and player.Character:FindFirstChild("Humanoid") then
+            player.Character.Humanoid.CameraOffset = Vector3.new(math.random(-1,1), math.random(-1,1), math.random(-1,1))
+        end
+        
+        i = i % #colors + 1
+        task.wait(0.1) -- Velocidad de parpadeo (Muy rápido)
     end
 end)
+
+-- 4. MENSAJE FINAL AL EJECUTAR
+warn("EL SCRIPT 'PITUFO WX7' HA ENTRADO EN MODO DE DEFENSA.")
