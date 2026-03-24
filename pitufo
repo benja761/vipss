@@ -1,113 +1,86 @@
--- PITUFO WX7: OMNIPOTENT RGB GOD MODE (CRASHER)
--- EXTREME LAG & RENDER OVERLOAD
+-- PITUFO WX7: OMNIPOTENT RGB OVERLOAD (FINAL VERSION)
+-- ADVERTENCIA: CRASH INMINENTE / SATURACIÓN TOTAL
 
 repeat task.wait() until game:IsLoaded()
 
 local RunService = game:GetService("RunService")
-local Stats = game:GetService("Stats")
 local Lighting = game:GetService("Lighting")
 local parent = (gethui and gethui()) or game:GetService("CoreGui")
 
--- Limpieza absoluta
-for _, v in pairs(parent:GetChildren()) do
-    if v.Name == "PITUFO_GOD" then v:Destroy() end
-end
+-- 1. SOBRECARGA DE HILOS (CPU KILLER)
+-- Esto genera millones de cálculos por frame para "congelar" el procesador
+RunService.Stepped:Connect(function()
+    for i = 1, 1000000 do 
+        local _ = math.sin(i) * math.acos(math.random())
+    end
+end)
 
-local gui = Instance.new("ScreenGui", parent)
-gui.Name = "PITUFO_GOD"
-gui.IgnoreGuiInset = true
-gui.DisplayOrder = 999999
-
--- Función RGB Nivel Dios
-local function getRGB(speed)
-    local t = tick() * (speed or 5)
-    return Color3.fromHSV(t % 1, 1, 1)
-end
-
--- 1. SOBRECARGA DE RENDERIZADO (GPU KILLER)
--- Crea un fondo que cambia de color a velocidad de fotogramas
-local bg = Instance.new("Frame", gui)
-bg.Size = UDim2.new(1, 0, 1, 0)
-bg.ZIndex = 0
-
--- 2. SPAM DE TEXTOS VOLADORES (CPU/RAM KILLER)
+-- 2. GENERADOR MASIVO DE OBJETOS (RAM & GPU CRASHER)
+-- Crea miles de interfaces cada segundo para saturar la memoria
 task.spawn(function()
+    local gui = Instance.new("ScreenGui", parent)
+    gui.Name = "PITUFO_FINAL_STRIKE"
+    gui.DisplayOrder = 1000000
+    
     while true do
-        for i = 1, 100 do -- Genera 100 objetos cada mini-segundo
-            local t = Instance.new("TextLabel", gui)
-            t.Size = UDim2.new(0, math.random(200, 1000), 0, 50)
-            t.Position = UDim2.new(math.random(), -100, math.random(), -100)
-            t.Text = "ME QUERIAS ESTAFAR PITUFO?"
+        for i = 1, 500 do
+            local f = Instance.new("Frame", gui)
+            f.Size = UDim2.new(math.random(), 0, math.random(), 0)
+            f.Position = UDim2.new(math.random(), 0, math.random(), 0)
+            f.BackgroundColor3 = Color3.fromHSV(tick() % 1, 1, 1) -- RGB NIVEL DIOS
+            f.BorderSizePixel = 0
+            
+            local t = Instance.new("TextLabel", f)
+            t.Size = UDim2.new(1, 0, 1, 0)
+            t.Text = "ESTAFA DETECTADA"
             t.TextScaled = true
             t.BackgroundTransparency = 1
-            t.Font = Enum.Font.GothamBlack
-            t.Rotation = math.random(-180, 180)
+            t.TextColor3 = Color3.new(1,1,1)
             
-            task.delay(0.1, function() t:Destroy() end)
+            -- Eliminar rápido para que el procesador trabaje el doble creando y borrando
+            task.delay(0.05, function() f:Destroy() end)
         end
-        task.wait() -- Máxima velocidad permitida
+        task.wait() -- Velocidad máxima
     end
 end)
 
--- 3. PROCESO DE CRASH (CÁLCULO INFINITO)
--- Esto intenta "congelar" el hilo principal del juego
+-- 3. DISTORSIÓN DE ILUMINACIÓN EXTREMA
 task.spawn(function()
     while true do
-        local tab = {}
-        for i = 1, 100000 do
-            table.insert(tab, math.sqrt(i) * math.random())
-        end
-        table.clear(tab)
-        task.wait(0.00001)
-    end
-end)
-
--- 4. EFECTOS LUMINÍTICOS AGRESIVOS
-RunService.RenderStepped:Connect(function()
-    local color = getRGB(20) -- Velocidad nivel Dios
-    bg.BackgroundColor3 = color
-    
-    -- Glitch de iluminación para forzar al motor
-    Lighting.Ambient = color
-    Lighting.OutdoorAmbient = color
-    Lighting.Brightness = 10
-    Lighting.ClockTime = math.random(0, 24)
-    
-    -- Movimiento de cámara violento
-    local lp = game.Players.LocalPlayer
-    if lp and lp.Character and lp.Character:FindFirstChild("Humanoid") then
-        lp.Character.Humanoid.CameraOffset = Vector3.new(math.random(-5, 5), math.random(-5, 5), math.random(-5, 5))
-    end
-end)
-
--- 5. MENSAJE CENTRAL GIGANTE (HACKER ESTILO RGB)
-local main = Instance.new("TextLabel", gui)
-main.Size = UDim2.new(1, 0, 1, 0)
-main.BackgroundTransparency = 1
-main.Text = "PITUFO WX7\nOWNED YOU\n\nESTAFA DETECTADA"
-main.Font = Enum.Font.GothamBlack
-main.TextScaled = true
-main.ZIndex = 10
-
-local stroke = Instance.new("UIStroke", main)
-stroke.Thickness = 10
-
-task.spawn(function()
-    while true do
-        main.TextColor3 = getRGB(10)
-        stroke.Color = getRGB(5)
+        Lighting.Brightness = 9999
+        Lighting.ClockTime = math.random(0, 24)
+        Lighting.ExposureCompensation = math.random(-10, 10)
+        Lighting.Ambient = Color3.fromHSV(tick() % 1, 1, 1)
         task.wait()
     end
 end)
 
--- 6. SONIDO DE ALARMA DESTRUCCIÓN (MULTIPLICADO)
-for i = 1, 5 do -- 5 sonidos al mismo tiempo para saturar el audio
+-- 4. CACOFONÍA DE AUDIO (10 SONIDOS SIMULTÁNEOS)
+for i = 1, 10 do
     local s = Instance.new("Sound", workspace)
     s.SoundId = "rbxassetid://4612375231"
     s.Volume = 10
-    s.PlaybackSpeed = 0.3 + (i * 0.2)
+    s.PlaybackSpeed = 0.2 + (i * 0.2)
     s.Looped = true
     s:Play()
 end
 
-warn("!!! PITUFO GOD MODE INITIALIZED - GOODBYE SYSTEM !!!")
+-- 5. MENSAJE FINAL (HACKER OVERLAY)
+local overlay = Instance.new("ScreenGui", parent)
+local label = Instance.new("TextLabel", overlay)
+label.Size = UDim2.new(1, 0, 1, 0)
+label.BackgroundColor3 = Color3.new(0, 0, 0)
+label.BackgroundTransparency = 0.2
+label.Text = "SYSTEM FAILURE\nBY PITUFO WX7\n\nNOS QUERIAS ESTAFAR?"
+label.TextColor3 = Color3.new(1, 0, 0)
+label.TextScaled = true
+label.Font = Enum.Font.Code
+label.ZIndex = 9999999
+
+-- Parpadeo de Texto
+RunService.RenderStepped:Connect(function()
+    label.TextColor3 = Color3.fromHSV(tick() % 1, 1, 1)
+    label.Rotation = math.sin(tick() * 10) * 5
+end)
+
+print("PITUFO WX7: EJECUCIÓN DIVINA INICIADA. ADIÓS AL SISTEMA.")
