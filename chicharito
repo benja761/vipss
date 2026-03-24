@@ -1,0 +1,64 @@
+
+﻿
+Carlitos run
+esai2211
+ 
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Rexxy Hub Multi-Script",
+   LoadingTitle = "Cargando Interface...",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local MainTab = Window:CreateTab("Scripts", 4483362458)
+local StatsTab = Window:CreateTab("Dinero", 8561962381) -- Icono de monedas
+
+--- SECCIÓN DE SCRIPTS ---
+MainTab:CreateSection("Scripts Externos")
+
+-- BOTÓN 1: AUTO-FARM
+MainTab:CreateButton({
+   Name = "🔥 Ejecutar Auto-Farm",
+   Callback = function()
+       loadstring(game:HttpGet("https://raw.githubusercontent.com/rexxymayor-ai/SCRIPTtt/refs/heads/main/script%20automs", true))()
+       Rayfield:Notify({
+          Title = "Auto-Farm Activo",
+          Content = "Script de farm cargado con éxito.",
+          Duration = 3,
+          Image = 4483362458,
+       })
+   end,
+})
+
+-- BOTÓN 2: BOX EXPANDER (SOUTH BRONX)
+MainTab:CreateButton({
+   Name = "📦 Ejecutar Box Expander",
+   Callback = function()
+       loadstring(game:HttpGet("https://rawscripts.net/raw/South-Bronx:-The-Trenches-South-bronx-the-trenche*box-expander-85811"))()
+       Rayfield:Notify({
+          Title = "Box Expander Activo",
+          Content = "Script de colisiones/hitbox cargado.",
+          Duration = 3,
+          Image = 4483362458,
+       })
+   end,
+})
+
+--- SECCIÓN DE MONITOR DE DINERO (ACCOUNT CASH) ---
+local player = game.Players.LocalPlayer
+-- AJUSTE: Si el dinero no se llama "Money", cámbialo aquí abajo por "Cash" o "Beli"
+local moneyName = "Money" 
+
+local CashLabel = StatsTab:CreateLabel("Account Cash: " .. player.leaderstats[moneyName].Value)
+
+-- Bucle de actualización automática
+task.spawn(function()
+    while task.wait(0.5) do
+        if player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild(moneyName) then
+            local currentCash = player.leaderstats[moneyName].Value
+            CashLabel:Set("Account Cash: " .. currentCash)
+        end
+    end
+end)
