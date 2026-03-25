@@ -1,39 +1,37 @@
 --!strict
 -- Lotus X | South Bronx | The Trenches
--- Premium visual-only menu mockup
--- All combat / esp options are UI demo only and start disabled.
+-- Compact premium UI mockup
+-- Aim / Visual controls are interface-only and do not perform gameplay actions.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local Lighting = game:GetService("Lighting")
 local SoundService = game:GetService("SoundService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
-local old = PlayerGui:FindFirstChild("LotusX_UI")
+local old = PlayerGui:FindFirstChild("LotusX_UI_Compact")
 if old then
 	old:Destroy()
 end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "LotusX_UI"
+gui.Name = "LotusX_UI_Compact"
 gui.ResetOnSpawn = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.Parent = PlayerGui
 
 local Theme = {
-	BG = Color3.fromRGB(7, 8, 12),
-	BG2 = Color3.fromRGB(11, 12, 18),
-	BG3 = Color3.fromRGB(16, 18, 27),
-	Card = Color3.fromRGB(18, 20, 28),
-	Soft = Color3.fromRGB(25, 28, 40),
-	Soft2 = Color3.fromRGB(33, 37, 54),
-	Stroke = Color3.fromRGB(44, 49, 70),
-	Text = Color3.fromRGB(243, 245, 252),
-	SubText = Color3.fromRGB(146, 154, 178),
+	BG = Color3.fromRGB(8, 9, 14),
+	BG2 = Color3.fromRGB(12, 13, 20),
+	Card = Color3.fromRGB(16, 18, 28),
+	Soft = Color3.fromRGB(22, 25, 38),
+	Soft2 = Color3.fromRGB(32, 36, 54),
+	Stroke = Color3.fromRGB(44, 49, 71),
+	Text = Color3.fromRGB(244, 246, 252),
+	SubText = Color3.fromRGB(149, 156, 180),
 	White = Color3.fromRGB(255, 255, 255),
 	Accent = Color3.fromRGB(186, 30, 40),
 	AccentDark = Color3.fromRGB(114, 16, 24),
@@ -44,19 +42,22 @@ local State = {
 	BlurEnabled = true,
 	SoundsEnabled = true,
 	TextureEnabled = true,
-	GlowEnabled = true,
 	NotificationsEnabled = true,
-	PreviewVisible = true,
 	WaitingForKeybind = false,
 	HideKey = Enum.KeyCode.Insert,
-	NotificationDuration = 4,
+	AimKey = Enum.KeyCode.E,
 	UIScale = 1,
 }
 
+local pages = {}
+local pageButtons = {}
+local controlsByPage = {}
+local currentPage = "Aim"
+
 local liveAccentObjects = {}
-local dynamicGradients = {}
-local textureOverlays = {}
-local dynamicAccentRichTexts = {}
+local gradientObjects = {}
+local activeTogglePills = {}
+local dynamicAccentUpdaters = {}
 
 local function tween(obj: Instance, info: TweenInfo, props: {[string]: any})
 	local tw = TweenService:Create(obj, info, props)
@@ -81,12 +82,25 @@ local function makeStroke(obj: Instance, color: Color3, thickness: number, trans
 	return s
 end
 
-local function addList(parent: Instance, pad: number)
+local function addList(parent: Instance, padding: number)
 	local list = Instance.new("UIListLayout")
-	list.Padding = UDim.new(0, pad)
+	list.Padding = UDim.new(0, padding)
 	list.SortOrder = Enum.SortOrder.LayoutOrder
 	list.Parent = parent
 	return list
+end
+
+local function createFrame(parent: Instance, size: UDim2, pos: UDim2, color: Color3, z: number, radius: number)
+	local frame = Instance.new("Frame")
+	frame.Size = size
+	frame.Position = pos
+	frame.BackgroundColor3 = color
+	frame.BorderSizePixel = 0
+	frame.ZIndex = z
+	frame.Parent = parent
+	makeCorner(frame, radius)
+	makeStroke(frame, Theme.Stroke, 1)
+	return frame
 end
 
 local function addTextureOverlay(parent: Instance, transparency: number)
@@ -99,88 +113,28 @@ local function addTextureOverlay(parent: Instance, transparency: number)
 	tex.ScaleType = Enum.ScaleType.Crop
 	tex.ZIndex = parent.ZIndex + 1
 	tex.Parent = parent
-	makeCorner(tex, 14)
-	table.insert(textureOverlays, tex)
+	makeCorner(tex, 16)
 	return tex
 end
 
-local function createFrame(parent: Instance, size: UDim2, pos: UDim2, color: Color3, z: number, radius: number)
-	local f = Instance.new("Frame")
-	f.Size = size
-	f.Position = pos
-	f.BackgroundColor3 = color
-	f.BorderSizePixel = 0
-	f.ZIndex = z
-	f.Parent = parent
-	makeCorner(f, radius)
-	makeStroke(f, Theme.Stroke, 1)
-	return f
+local function accentRGBString(color: Color3): string
+	return string.format("%d,%d,%d", math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5), math.floor(color.B * 255 + 0.5))
 end
 
-local function registerAccentObject(obj: Instance, prop: string, dark: boolean?)
+local function registerAccentObject(obj: Instance, prop: string, useDark: boolean?)
 	table.insert(liveAccentObjects, {
 		Obj = obj,
 		Prop = prop,
-		Dark = dark == true,
+		Dark = useDark == true,
 	})
 end
 
 local function registerGradient(g: UIGradient)
-	table.insert(dynamicGradients, g)
+	table.insert(gradientObjects, g)
 end
 
-local function accentString(c: Color3)
-	return string.format("%d,%d,%d", math.floor(c.R * 255 + 0.5), math.floor(c.G * 255 + 0.5), math.floor(c.B * 255 + 0.5))
-end
-
-local function registerAccentRichText(label: TextLabel, prefix: string, suffix: string)
-	table.insert(dynamicAccentRichTexts, {Label = label, Prefix = prefix, Suffix = suffix})
-end
-
-local function updateAccentTexts()
-	local rgb = accentString(Theme.Accent)
-	for _, item in ipairs(dynamicAccentRichTexts) do
-		if item.Label and item.Label.Parent then
-			item.Label.Text = string.format("<font color='rgb(%s)'>%s</font>%s", rgb, item.Prefix, item.Suffix)
-		end
-	end
-end
-
-local function setAccentColor(color: Color3)
-	Theme.Accent = color
-	Theme.AccentDark = Color3.fromRGB(
-		math.max(0, math.floor(color.R * 255) - 70),
-		math.max(0, math.floor(color.G * 255) - 70),
-		math.max(0, math.floor(color.B * 255) - 70)
-	)
-
-	for _, item in ipairs(liveAccentObjects) do
-		if item.Obj and item.Obj.Parent then
-			pcall(function()
-				item.Obj[item.Prop] = item.Dark and Theme.AccentDark or Theme.Accent
-			end)
-		end
-	end
-
-	for _, g in ipairs(dynamicGradients) do
-		if g and g.Parent then
-			g.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Theme.Accent),
-				ColorSequenceKeypoint.new(1, Theme.AccentDark),
-			})
-		end
-	end
-
-	updateAccentTexts()
-end
-
-local function setTextureVisible(state: boolean)
-	State.TextureEnabled = state
-	for _, tex in ipairs(textureOverlays) do
-		if tex and tex.Parent then
-			tex.Visible = state
-		end
-	end
+local function registerDynamicAccentUpdater(fn: () -> ())
+	table.insert(dynamicAccentUpdaters, fn)
 end
 
 local function playUISound(id: string, volume: number, speed: number?)
@@ -203,10 +157,10 @@ local function playUISound(id: string, volume: number, speed: number?)
 	end)
 end
 
-local blur = Lighting:FindFirstChild("LotusX_Blur")
+local blur = Lighting:FindFirstChild("LotusX_Blur_Compact")
 if not blur then
 	blur = Instance.new("BlurEffect")
-	blur.Name = "LotusX_Blur"
+	blur.Name = "LotusX_Blur_Compact"
 	blur.Size = 0
 	blur.Parent = Lighting
 end
@@ -219,20 +173,19 @@ local root = Instance.new("Frame")
 root.Name = "Root"
 root.AnchorPoint = Vector2.new(0.5, 0.5)
 root.Position = UDim2.fromScale(0.5, 0.5)
-root.Size = UDim2.fromOffset(1220, 720)
+root.Size = UDim2.fromOffset(940, 575)
 root.BackgroundTransparency = 1
 root.Parent = gui
 
 local aura = Instance.new("ImageLabel")
-aura.Name = "Aura"
 aura.BackgroundTransparency = 1
 aura.AnchorPoint = Vector2.new(0.5, 0.5)
 aura.Position = UDim2.fromScale(0.5, 0.5)
-aura.Size = UDim2.new(1, 52, 1, 52)
+aura.Size = UDim2.new(1, 48, 1, 48)
 aura.Image = "rbxassetid://5028857084"
-aura.ImageTransparency = 0.60
 aura.ScaleType = Enum.ScaleType.Slice
 aura.SliceCenter = Rect.new(24, 24, 276, 276)
+aura.ImageTransparency = 0.66
 aura.ImageColor3 = Theme.Accent
 aura.ZIndex = 0
 aura.Parent = root
@@ -247,43 +200,34 @@ addTextureOverlay(header, 0.965)
 local title = Instance.new("TextLabel")
 title.BackgroundTransparency = 1
 title.Position = UDim2.fromOffset(18, 0)
-title.Size = UDim2.new(0, 600, 1, 0)
+title.Size = UDim2.new(0, 560, 1, 0)
 title.Font = Enum.Font.GothamBold
-title.TextSize = 22
 title.RichText = true
+title.TextSize = 22
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextColor3 = Theme.Text
 title.ZIndex = 7
 title.Parent = header
-registerAccentRichText(title, "Lotus X", "  |  South Bronx | The Trenches")
 
-local version = Instance.new("TextLabel")
-version.BackgroundTransparency = 1
-version.AnchorPoint = Vector2.new(1, 0.5)
-version.Position = UDim2.new(1, -54, 0.5, 0)
-version.Size = UDim2.fromOffset(76, 20)
-version.Font = Enum.Font.GothamSemibold
-version.Text = "v3.0.0"
-version.TextSize = 12
-version.TextXAlignment = Enum.TextXAlignment.Right
-version.TextColor3 = Theme.SubText
-version.ZIndex = 7
-version.Parent = header
+local function updateTitle()
+	local rgb = accentRGBString(Theme.Accent)
+	title.Text = string.format("Lotus X  |  <font color='rgb(%s)'>South</font> Bronx | The Trenches", rgb)
+end
+registerDynamicAccentUpdater(updateTitle)
 
-local closeBtn = Instance.new("TextButton")
-closeBtn.AutoButtonColor = false
-closeBtn.AnchorPoint = Vector2.new(1, 0.5)
-closeBtn.Position = UDim2.new(1, -16, 0.5, 0)
-closeBtn.Size = UDim2.fromOffset(24, 24)
-closeBtn.BackgroundTransparency = 1
-closeBtn.Font = Enum.Font.GothamBold
-closeBtn.Text = "×"
-closeBtn.TextSize = 18
-closeBtn.TextColor3 = Theme.SubText
-closeBtn.ZIndex = 7
-closeBtn.Parent = header
+local subTitle = Instance.new("TextLabel")
+subTitle.BackgroundTransparency = 1
+subTitle.Position = UDim2.fromOffset(20, 40)
+subTitle.Size = UDim2.new(0, 380, 0, 16)
+subTitle.Font = Enum.Font.Gotham
+subTitle.Text = "Compact premium layout · interface-only controls"
+subTitle.TextSize = 11
+subTitle.TextXAlignment = Enum.TextXAlignment.Left
+subTitle.TextColor3 = Theme.SubText
+subTitle.ZIndex = 7
+subTitle.Parent = header
 
-local searchWrap = createFrame(header, UDim2.fromOffset(320, 40), UDim2.new(1, -388, 0.5, -20), Theme.Soft, 7, 12)
+local searchWrap = createFrame(header, UDim2.fromOffset(262, 40), UDim2.new(1, -312, 0.5, -20), Theme.Soft, 7, 12)
 local searchIcon = Instance.new("TextLabel")
 searchIcon.BackgroundTransparency = 1
 searchIcon.Position = UDim2.fromOffset(12, 0)
@@ -310,127 +254,40 @@ searchBox.TextColor3 = Theme.Text
 searchBox.ZIndex = 8
 searchBox.Parent = searchWrap
 
+local closeBtn = Instance.new("TextButton")
+closeBtn.BackgroundTransparency = 1
+closeBtn.AutoButtonColor = false
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
+closeBtn.Position = UDim2.new(1, -14, 0.5, 0)
+closeBtn.Size = UDim2.fromOffset(24, 24)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Text = "×"
+closeBtn.TextSize = 18
+closeBtn.TextColor3 = Theme.SubText
+closeBtn.ZIndex = 7
+closeBtn.Parent = header
+
 local body = Instance.new("Frame")
 body.BackgroundTransparency = 1
 body.Position = UDim2.fromOffset(10, 86)
-body.Size = UDim2.new(1, -20, 1, -162)
+body.Size = UDim2.new(1, -20, 1, -156)
 body.ZIndex = 6
 body.Parent = main
 
 local pagesHolder = Instance.new("Frame")
 pagesHolder.BackgroundTransparency = 1
-pagesHolder.Size = UDim2.new(1, 0, 1, -78)
+pagesHolder.Size = UDim2.new(1, 0, 1, -74)
 pagesHolder.Parent = body
 
-local previewCard = createFrame(root, UDim2.fromOffset(288, 540), UDim2.new(1, 10, 0, 86), Theme.BG2, 7, 14)
-addTextureOverlay(previewCard, 0.965)
-
-local previewTitle = Instance.new("TextLabel")
-previewTitle.BackgroundTransparency = 1
-previewTitle.Position = UDim2.fromOffset(14, 12)
-previewTitle.Size = UDim2.new(1, -28, 0, 22)
-previewTitle.Font = Enum.Font.GothamBold
-previewTitle.Text = "Preview"
-previewTitle.TextSize = 16
-previewTitle.TextXAlignment = Enum.TextXAlignment.Left
-previewTitle.TextColor3 = Theme.Text
-previewTitle.ZIndex = 8
-previewTitle.Parent = previewCard
-
-local previewSub = Instance.new("TextLabel")
-previewSub.BackgroundTransparency = 1
-previewSub.Position = UDim2.fromOffset(14, 32)
-previewSub.Size = UDim2.new(1, -28, 0, 16)
-previewSub.Font = Enum.Font.Gotham
-previewSub.Text = "Local character visual panel"
-previewSub.TextSize = 11
-previewSub.TextXAlignment = Enum.TextXAlignment.Left
-previewSub.TextColor3 = Theme.SubText
-previewSub.ZIndex = 8
-previewSub.Parent = previewCard
-
-local viewportWrap = createFrame(previewCard, UDim2.new(1, -28, 0, 282), UDim2.fromOffset(14, 56), Theme.Soft, 8, 12)
-local viewport = Instance.new("ViewportFrame")
-viewport.BackgroundTransparency = 1
-viewport.Size = UDim2.fromScale(1, 1)
-viewport.CurrentCamera = Instance.new("Camera")
-viewport.CurrentCamera.Parent = viewport
-viewport.ZIndex = 9
-viewport.Parent = viewportWrap
-
-local previewStats = Instance.new("Frame")
-previewStats.BackgroundTransparency = 1
-previewStats.Position = UDim2.fromOffset(14, 350)
-previewStats.Size = UDim2.new(1, -28, 1, -364)
-previewStats.Parent = previewCard
-addList(previewStats, 8)
-
-local function statRow(labelText: string, valueText: string)
-	local row = createFrame(previewStats, UDim2.new(1, 0, 0, 36), UDim2.new(), Theme.Soft, 8, 9)
-
-	local a = Instance.new("TextLabel")
-	a.BackgroundTransparency = 1
-	a.Position = UDim2.fromOffset(12, 0)
-	a.Size = UDim2.new(0.55, 0, 1, 0)
-	a.Font = Enum.Font.GothamMedium
-	a.Text = labelText
-	a.TextSize = 13
-	a.TextXAlignment = Enum.TextXAlignment.Left
-	a.TextColor3 = Theme.SubText
-	a.ZIndex = 9
-	a.Parent = row
-
-	local b = Instance.new("TextLabel")
-	b.BackgroundTransparency = 1
-	b.AnchorPoint = Vector2.new(1, 0)
-	b.Position = UDim2.new(1, -12, 0, 0)
-	b.Size = UDim2.new(0.4, 0, 1, 0)
-	b.Font = Enum.Font.GothamSemibold
-	b.Text = valueText
-	b.TextSize = 13
-	b.TextXAlignment = Enum.TextXAlignment.Right
-	b.TextColor3 = Theme.Text
-	b.ZIndex = 9
-	b.Parent = row
-
-	return row, b
-end
-
-local _, statPreset = statRow("Preset", "Premium")
-local _, statTheme = statRow("Theme", "Custom")
-local _, statLayout = statRow("Layout", "Embedded Tabs")
-local _, statStatus = statRow("Status", "Loaded")
-
--- Tabs embedded inside menu
 local tabsWrap = Instance.new("Frame")
 tabsWrap.BackgroundTransparency = 1
-tabsWrap.Position = UDim2.new(0, 0, 1, -70)
-tabsWrap.Size = UDim2.new(1, 0, 0, 62)
+tabsWrap.Position = UDim2.new(0, 0, 1, -58)
+tabsWrap.Size = UDim2.new(1, 0, 0, 58)
 tabsWrap.ZIndex = 8
 tabsWrap.Parent = body
 
-local tabsShell = createFrame(tabsWrap, UDim2.new(1, 0, 0, 46), UDim2.new(0, 0, 0, 8), Theme.BG2, 10, 14)
-addTextureOverlay(tabsShell, 0.965)
-
-local tabsShellLayout = Instance.new("UIListLayout")
-tabsShellLayout.FillDirection = Enum.FillDirection.Horizontal
-tabsShellLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-tabsShellLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-tabsShellLayout.Padding = UDim.new(0, 8)
-tabsShellLayout.Parent = tabsShell
-
-local tabsPadding = Instance.new("UIPadding")
-tabsPadding.PaddingLeft = UDim.new(0, 10)
-tabsPadding.PaddingRight = UDim.new(0, 10)
-tabsPadding.Parent = tabsShell
-
-local tabsBar = Instance.new("Frame")
-tabsBar.Name = "MainTabsBar"
-tabsBar.BackgroundTransparency = 1
-tabsBar.Size = UDim2.fromOffset(0, 46)
-tabsBar.AutomaticSize = Enum.AutomaticSize.X
-tabsBar.ZIndex = 11
-tabsBar.Parent = tabsShell
+local tabsBar = createFrame(tabsWrap, UDim2.new(1, 0, 0, 46), UDim2.new(0, 0, 0, 6), Theme.BG2, 10, 14)
+addTextureOverlay(tabsBar, 0.965)
 
 local tabsLayout = Instance.new("UIListLayout")
 tabsLayout.FillDirection = Enum.FillDirection.Horizontal
@@ -439,31 +296,15 @@ tabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 tabsLayout.Padding = UDim.new(0, 8)
 tabsLayout.Parent = tabsBar
 
-local tabsGroupSpacer = Instance.new("Frame")
-tabsGroupSpacer.BackgroundTransparency = 1
-tabsGroupSpacer.Size = UDim2.fromOffset(12, 1)
-tabsGroupSpacer.ZIndex = 11
-tabsGroupSpacer.Parent = tabsShell
-
-local subTabsBar = Instance.new("Frame")
-subTabsBar.Name = "SubTabsBar"
-subTabsBar.BackgroundTransparency = 1
-subTabsBar.Size = UDim2.fromOffset(0, 46)
-subTabsBar.AutomaticSize = Enum.AutomaticSize.X
-subTabsBar.ZIndex = 11
-subTabsBar.Parent = tabsShell
-
-local subTabsLayout = Instance.new("UIListLayout")
-subTabsLayout.FillDirection = Enum.FillDirection.Horizontal
-subTabsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-subTabsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-subTabsLayout.Padding = UDim.new(0, 6)
-subTabsLayout.Parent = subTabsBar
+local tabsPadding = Instance.new("UIPadding")
+tabsPadding.PaddingLeft = UDim.new(0, 12)
+tabsPadding.PaddingRight = UDim.new(0, 12)
+tabsPadding.Parent = tabsBar
 
 local notifHolder = Instance.new("Frame")
 notifHolder.AnchorPoint = Vector2.new(1, 1)
 notifHolder.Position = UDim2.new(1, -18, 1, -18)
-notifHolder.Size = UDim2.fromOffset(350, 280)
+notifHolder.Size = UDim2.fromOffset(330, 240)
 notifHolder.BackgroundTransparency = 1
 notifHolder.ZIndex = 30
 notifHolder.Parent = gui
@@ -476,13 +317,13 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	if not State.NotificationsEnabled then
 		return
 	end
-	duration = duration or State.NotificationDuration
+	duration = duration or 2.8
 
-	local card = createFrame(notifHolder, UDim2.fromOffset(326, 76), UDim2.new(), Theme.BG2, 31, 12)
+	local card = createFrame(notifHolder, UDim2.fromOffset(312, 72), UDim2.new(), Theme.BG2, 31, 12)
 	addTextureOverlay(card, 0.965)
 
 	local accent = Instance.new("Frame")
-	accent.Size = UDim2.fromOffset(5, 76)
+	accent.Size = UDim2.fromOffset(5, 72)
 	accent.BackgroundColor3 = Theme.Accent
 	accent.BorderSizePixel = 0
 	accent.ZIndex = 32
@@ -491,12 +332,12 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 
 	local glow = Instance.new("ImageLabel")
 	glow.BackgroundTransparency = 1
-	glow.Size = UDim2.fromOffset(22, 76)
+	glow.Size = UDim2.fromOffset(22, 72)
 	glow.Position = UDim2.fromOffset(-7, 0)
 	glow.Image = "rbxassetid://5028857084"
 	glow.ScaleType = Enum.ScaleType.Slice
 	glow.SliceCenter = Rect.new(24, 24, 276, 276)
-	glow.ImageTransparency = 0.56
+	glow.ImageTransparency = 0.60
 	glow.ImageColor3 = Theme.Accent
 	glow.ZIndex = 31
 	glow.Parent = card
@@ -517,7 +358,7 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	local b = Instance.new("TextLabel")
 	b.BackgroundTransparency = 1
 	b.Position = UDim2.fromOffset(18, 30)
-	b.Size = UDim2.new(1, -28, 0, 28)
+	b.Size = UDim2.new(1, -30, 0, 28)
 	b.Font = Enum.Font.Gotham
 	b.Text = bodyText
 	b.TextSize = 12
@@ -528,36 +369,19 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	b.ZIndex = 32
 	b.Parent = card
 
-	local track = Instance.new("Frame")
-	track.Position = UDim2.fromOffset(18, 62)
-	track.Size = UDim2.new(1, -36, 0, 4)
-	track.BackgroundColor3 = Theme.Soft2
-	track.BorderSizePixel = 0
-	track.ZIndex = 32
-	track.Parent = card
-	makeCorner(track, 3)
-
-	local fill = Instance.new("Frame")
-	fill.Size = UDim2.fromScale(1, 1)
-	fill.BackgroundColor3 = Theme.Accent
-	fill.BorderSizePixel = 0
-	fill.ZIndex = 33
-	fill.Parent = track
-	makeCorner(fill, 3)
-	registerAccentObject(fill, "BackgroundColor3")
-
-	card.Position = UDim2.fromOffset(28, 0)
+	card.Position = UDim2.fromOffset(24, 0)
 	card.BackgroundTransparency = 1
 	tween(card, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		Position = UDim2.fromOffset(0, 0),
 		BackgroundTransparency = 0,
 	})
-	tween(fill, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0, 1)})
 
 	task.delay(duration, function()
-		if not card.Parent then return end
+		if not card.Parent then
+			return
+		end
 		tween(card, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-			Position = UDim2.fromOffset(38, 0),
+			Position = UDim2.fromOffset(36, 0),
 			BackgroundTransparency = 1,
 		})
 		task.wait(0.2)
@@ -566,13 +390,6 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 		end
 	end)
 end
-
-local pages = {}
-local pageButtons = {}
-local subTabButtons = {}
-local controlsByPage = {}
-local currentPage = "Combat"
-local currentSub = "Aim"
 
 local function createPage(name: string)
 	local p = Instance.new("Frame")
@@ -586,47 +403,46 @@ local function createPage(name: string)
 	return p
 end
 
-local function registerControl(pageName: string, row: GuiObject, searchText: string, subName: string)
+local function registerControl(pageName: string, row: GuiObject, searchText: string)
 	table.insert(controlsByPage[pageName], {
 		Row = row,
 		Text = string.lower(searchText),
-		Sub = subName,
 	})
 end
 
-local function makeSection(parent: Instance, titleText: string, size: UDim2, pos: UDim2)
-	local section = createFrame(parent, size, pos, Theme.BG2, 7, 14)
+local function makeSection(parent: Instance, titleText: string, size: UDim2, pos: UDim2, subText: string?)
+	local section = createFrame(parent, size, pos, Theme.BG2, 7, 16)
 	addTextureOverlay(section, 0.965)
 
-	local titleL = Instance.new("TextLabel")
-	titleL.BackgroundTransparency = 1
-	titleL.Position = UDim2.fromOffset(14, 10)
-	titleL.Size = UDim2.new(1, -28, 0, 22)
-	titleL.Font = Enum.Font.GothamBold
-	titleL.Text = titleText
-	titleL.TextSize = 16
-	titleL.TextXAlignment = Enum.TextXAlignment.Left
-	titleL.TextColor3 = Theme.Text
-	titleL.ZIndex = 8
-	titleL.Parent = section
+	local sectionTitle = Instance.new("TextLabel")
+	sectionTitle.BackgroundTransparency = 1
+	sectionTitle.Position = UDim2.fromOffset(16, 12)
+	sectionTitle.Size = UDim2.new(1, -32, 0, 22)
+	sectionTitle.Font = Enum.Font.GothamBold
+	sectionTitle.Text = titleText
+	sectionTitle.TextSize = 16
+	sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
+	sectionTitle.TextColor3 = Theme.Text
+	sectionTitle.ZIndex = 8
+	sectionTitle.Parent = section
 
-	local sub = Instance.new("TextLabel")
-	sub.BackgroundTransparency = 1
-	sub.Position = UDim2.fromOffset(14, 30)
-	sub.Size = UDim2.new(1, -28, 0, 16)
-	sub.Font = Enum.Font.Gotham
-	sub.Text = "Premium configuration panel"
-	sub.TextSize = 11
-	sub.TextXAlignment = Enum.TextXAlignment.Left
-	sub.TextColor3 = Theme.SubText
-	sub.ZIndex = 8
-	sub.Parent = section
+	local sectionSub = Instance.new("TextLabel")
+	sectionSub.BackgroundTransparency = 1
+	sectionSub.Position = UDim2.fromOffset(16, 32)
+	sectionSub.Size = UDim2.new(1, -32, 0, 16)
+	sectionSub.Font = Enum.Font.Gotham
+	sectionSub.Text = subText or "Compact premium configuration panel"
+	sectionSub.TextSize = 11
+	sectionSub.TextXAlignment = Enum.TextXAlignment.Left
+	sectionSub.TextColor3 = Theme.SubText
+	sectionSub.ZIndex = 8
+	sectionSub.Parent = section
 
 	local scrolling = Instance.new("ScrollingFrame")
 	scrolling.BackgroundTransparency = 1
 	scrolling.BorderSizePixel = 0
-	scrolling.Position = UDim2.fromOffset(10, 56)
-	scrolling.Size = UDim2.new(1, -20, 1, -66)
+	scrolling.Position = UDim2.fromOffset(10, 58)
+	scrolling.Size = UDim2.new(1, -20, 1, -68)
 	scrolling.ScrollBarThickness = 2
 	scrolling.ScrollBarImageColor3 = Theme.Accent
 	scrolling.CanvasSize = UDim2.new()
@@ -643,13 +459,14 @@ local function makeSection(parent: Instance, titleText: string, size: UDim2, pos
 end
 
 local function createInfoLabel(parent: Instance, text: string)
-	local row = createFrame(parent, UDim2.new(1, 0, 0, 34), UDim2.new(), Theme.Soft, 8, 10)
+	local row = createFrame(parent, UDim2.new(1, 0, 0, 36), UDim2.new(), Theme.Soft, 8, 10)
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 0)
 	label.Size = UDim2.new(1, -24, 1, 0)
 	label.Font = Enum.Font.Gotham
 	label.Text = text
+	label.TextWrapped = true
 	label.TextSize = 12
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextColor3 = Theme.SubText
@@ -658,8 +475,9 @@ local function createInfoLabel(parent: Instance, text: string)
 	return row
 end
 
-local function createButton(parent: Instance, text: string)
+local function createButton(parent: Instance, text: string, callback: (() -> ())?)
 	local btn = createFrame(parent, UDim2.new(1, 0, 0, 42), UDim2.new(), Theme.AccentDark, 8, 10)
+
 	local grad = Instance.new("UIGradient")
 	grad.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Theme.Accent),
@@ -679,155 +497,16 @@ local function createButton(parent: Instance, text: string)
 	label.ZIndex = 9
 	label.Parent = btn
 
+	btn.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			playUISound("rbxassetid://9118823103", 0.2, 1.02)
+			if callback then
+				callback()
+			end
+		end
+	end)
+
 	return btn
-end
-
-local function createDropdown(parent: Instance, text: string, values: {string}, defaultIndex: number?, onChanged: ((string) -> ())?)
-	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
-
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Position = UDim2.fromOffset(12, 0)
-	label.Size = UDim2.new(0.55, 0, 1, 0)
-	label.Font = Enum.Font.GothamMedium
-	label.Text = text
-	label.TextSize = 13
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextColor3 = Theme.Text
-	label.ZIndex = 9
-	label.Parent = row
-
-	local idx = defaultIndex or 1
-	local value = Instance.new("TextLabel")
-	value.BackgroundTransparency = 1
-	value.AnchorPoint = Vector2.new(1, 0)
-	value.Position = UDim2.new(1, -34, 0, 0)
-	value.Size = UDim2.new(0.35, 0, 1, 0)
-	value.Font = Enum.Font.Gotham
-	value.Text = values[idx]
-	value.TextSize = 12
-	value.TextXAlignment = Enum.TextXAlignment.Right
-	value.TextColor3 = Theme.SubText
-	value.ZIndex = 9
-	value.Parent = row
-
-	local arrow = Instance.new("TextLabel")
-	arrow.BackgroundTransparency = 1
-	arrow.AnchorPoint = Vector2.new(1, 0)
-	arrow.Position = UDim2.new(1, -12, 0, 0)
-	arrow.Size = UDim2.fromOffset(18, 40)
-	arrow.Font = Enum.Font.GothamBold
-	arrow.Text = "▾"
-	arrow.TextSize = 14
-	arrow.TextColor3 = Theme.SubText
-	arrow.ZIndex = 9
-	arrow.Parent = row
-
-	row.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			idx += 1
-			if idx > #values then
-				idx = 1
-			end
-			value.Text = values[idx]
-			playUISound("rbxassetid://9118823103", 0.22, 1.02)
-			if onChanged then
-				onChanged(values[idx])
-			end
-		end
-	end)
-
-	return row, value
-end
-
-local function createSlider(parent: Instance, text: string, min: number, max: number, default: number, onChanged: ((number) -> ())?)
-	local row = createFrame(parent, UDim2.new(1, 0, 0, 54), UDim2.new(), Theme.Soft, 8, 10)
-
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Position = UDim2.fromOffset(12, 6)
-	label.Size = UDim2.new(1, -80, 0, 18)
-	label.Font = Enum.Font.GothamMedium
-	label.Text = text
-	label.TextSize = 13
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextColor3 = Theme.Text
-	label.ZIndex = 9
-	label.Parent = row
-
-	local value = Instance.new("TextLabel")
-	value.BackgroundTransparency = 1
-	value.AnchorPoint = Vector2.new(1, 0)
-	value.Position = UDim2.new(1, -12, 0, 6)
-	value.Size = UDim2.fromOffset(60, 18)
-	value.Font = Enum.Font.GothamSemibold
-	value.Text = tostring(default)
-	value.TextSize = 13
-	value.TextXAlignment = Enum.TextXAlignment.Right
-	value.TextColor3 = Theme.SubText
-	value.ZIndex = 9
-	value.Parent = row
-
-	local bar = Instance.new("Frame")
-	bar.Position = UDim2.fromOffset(12, 34)
-	bar.Size = UDim2.new(1, -24, 0, 8)
-	bar.BackgroundColor3 = Color3.fromRGB(51, 55, 72)
-	bar.BorderSizePixel = 0
-	bar.ZIndex = 9
-	bar.Parent = row
-	makeCorner(bar, 4)
-
-	local fill = Instance.new("Frame")
-	fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-	fill.BackgroundColor3 = Theme.Accent
-	fill.BorderSizePixel = 0
-	fill.ZIndex = 10
-	fill.Parent = bar
-	makeCorner(fill, 4)
-	registerAccentObject(fill, "BackgroundColor3")
-
-	local knob = Instance.new("Frame")
-	knob.AnchorPoint = Vector2.new(0.5, 0.5)
-	knob.Position = UDim2.new(fill.Size.X.Scale, 0, 0.5, 0)
-	knob.Size = UDim2.fromOffset(14, 14)
-	knob.BackgroundColor3 = Theme.White
-	knob.ZIndex = 11
-	knob.Parent = bar
-	makeCorner(knob, 7)
-
-	local dragging = false
-
-	local function update(x: number)
-		local alpha = math.clamp((x - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-		local v = math.floor(min + (max - min) * alpha + 0.5)
-		fill.Size = UDim2.new(alpha, 0, 1, 0)
-		knob.Position = UDim2.new(alpha, 0, 0.5, 0)
-		value.Text = tostring(v)
-		if onChanged then
-			onChanged(v)
-		end
-	end
-
-	bar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			update(UserInputService:GetMouseLocation().X)
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-			update(UserInputService:GetMouseLocation().X)
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = false
-		end
-	end)
-
-	return row, value
 end
 
 local function createToggle(parent: Instance, text: string, default: boolean, onChanged: ((boolean) -> ())?)
@@ -836,7 +515,7 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 0)
-	label.Size = UDim2.new(1, -70, 1, 0)
+	label.Size = UDim2.new(1, -72, 1, 0)
 	label.Font = Enum.Font.GothamMedium
 	label.Text = text
 	label.TextSize = 13
@@ -863,14 +542,20 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 	makeCorner(knob, 8)
 
 	local state = default
+	table.insert(activeTogglePills, {
+		Pill = pill,
+		GetState = function()
+			return state
+		end,
+	})
 
 	local function setState(v: boolean)
 		state = v
 		tween(pill, TweenInfo.new(0.15), {
-			BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(60, 63, 78)
+			BackgroundColor3 = state and Theme.Accent or Color3.fromRGB(60, 63, 78),
 		})
 		tween(knob, TweenInfo.new(0.15), {
-			Position = state and UDim2.fromOffset(22, 3) or UDim2.fromOffset(3, 3)
+			Position = state and UDim2.fromOffset(22, 3) or UDim2.fromOffset(3, 3),
 		})
 		if onChanged then
 			onChanged(state)
@@ -880,49 +565,171 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 	row.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			setState(not state)
-			playUISound("rbxassetid://9118828561", 0.16, state and 1.08 or 0.96)
+			playUISound("rbxassetid://9118828561", 0.16, state and 1.06 or 0.96)
 		end
 	end)
 
 	return row, setState
 end
 
-local function createColorPreviewRow(parent: Instance, labelText: string, defaultColor: Color3)
-	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
+local function createSlider(parent: Instance, text: string, min: number, max: number, default: number, onChanged: ((number) -> ())?)
+	local row = createFrame(parent, UDim2.new(1, 0, 0, 54), UDim2.new(), Theme.Soft, 8, 10)
 
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
-	label.Position = UDim2.fromOffset(12, 0)
-	label.Size = UDim2.new(1, -66, 1, 0)
+	label.Position = UDim2.fromOffset(12, 6)
+	label.Size = UDim2.new(1, -82, 0, 18)
 	label.Font = Enum.Font.GothamMedium
-	label.Text = labelText
+	label.Text = text
 	label.TextSize = 13
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 9
 	label.Parent = row
 
-	local swatch = Instance.new("Frame")
-	swatch.AnchorPoint = Vector2.new(1, 0.5)
-	swatch.Position = UDim2.new(1, -12, 0.5, 0)
-	swatch.Size = UDim2.fromOffset(24, 24)
-	swatch.BackgroundColor3 = defaultColor
-	swatch.ZIndex = 9
-	swatch.Parent = row
-	makeCorner(swatch, 7)
+	local value = Instance.new("TextLabel")
+	value.BackgroundTransparency = 1
+	value.AnchorPoint = Vector2.new(1, 0)
+	value.Position = UDim2.new(1, -12, 0, 6)
+	value.Size = UDim2.fromOffset(62, 18)
+	value.Font = Enum.Font.GothamSemibold
+	value.Text = tostring(default)
+	value.TextSize = 13
+	value.TextXAlignment = Enum.TextXAlignment.Right
+	value.TextColor3 = Theme.SubText
+	value.ZIndex = 9
+	value.Parent = row
 
-	return row, swatch
+	local bar = Instance.new("Frame")
+	bar.Position = UDim2.fromOffset(12, 34)
+	bar.Size = UDim2.new(1, -24, 0, 8)
+	bar.BackgroundColor3 = Color3.fromRGB(52, 56, 73)
+	bar.BorderSizePixel = 0
+	bar.ZIndex = 9
+	bar.Parent = row
+	makeCorner(bar, 4)
+
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+	fill.BackgroundColor3 = Theme.Accent
+	fill.BorderSizePixel = 0
+	fill.ZIndex = 10
+	fill.Parent = bar
+	makeCorner(fill, 4)
+	registerAccentObject(fill, "BackgroundColor3")
+
+	local knob = Instance.new("Frame")
+	knob.AnchorPoint = Vector2.new(0.5, 0.5)
+	knob.Position = UDim2.new(fill.Size.X.Scale, 0, 0.5, 0)
+	knob.Size = UDim2.fromOffset(14, 14)
+	knob.BackgroundColor3 = Theme.White
+	knob.ZIndex = 11
+	knob.Parent = bar
+	makeCorner(knob, 7)
+
+	local dragging = false
+
+	local function update(x: number)
+		local alpha = math.clamp((x - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
+		local valueNumber = math.floor(min + (max - min) * alpha + 0.5)
+		fill.Size = UDim2.new(alpha, 0, 1, 0)
+		knob.Position = UDim2.new(alpha, 0, 0.5, 0)
+		value.Text = tostring(valueNumber)
+		if onChanged then
+			onChanged(valueNumber)
+		end
+	end
+
+	bar.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			update(UserInputService:GetMouseLocation().X)
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+			update(UserInputService:GetMouseLocation().X)
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = false
+		end
+	end)
+
+	return row, value
 end
 
-local function createKeybindPicker(parent: Instance, labelText: string, defaultKey: Enum.KeyCode, onChanged: ((Enum.KeyCode) -> ())?)
+local function createDropdown(parent: Instance, text: string, values: {string}, defaultIndex: number?, onChanged: ((string) -> ())?)
 	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
 
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 0)
-	label.Size = UDim2.new(0.55, 0, 1, 0)
+	label.Size = UDim2.new(0.56, 0, 1, 0)
 	label.Font = Enum.Font.GothamMedium
-	label.Text = labelText
+	label.Text = text
+	label.TextSize = 13
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 9
+	label.Parent = row
+
+	local currentIndex = defaultIndex or 1
+
+	local value = Instance.new("TextLabel")
+	value.BackgroundTransparency = 1
+	value.AnchorPoint = Vector2.new(1, 0)
+	value.Position = UDim2.new(1, -34, 0, 0)
+	value.Size = UDim2.new(0.34, 0, 1, 0)
+	value.Font = Enum.Font.Gotham
+	value.Text = values[currentIndex]
+	value.TextSize = 12
+	value.TextXAlignment = Enum.TextXAlignment.Right
+	value.TextColor3 = Theme.SubText
+	value.ZIndex = 9
+	value.Parent = row
+
+	local arrow = Instance.new("TextLabel")
+	arrow.BackgroundTransparency = 1
+	arrow.AnchorPoint = Vector2.new(1, 0)
+	arrow.Position = UDim2.new(1, -12, 0, 0)
+	arrow.Size = UDim2.fromOffset(18, 40)
+	arrow.Font = Enum.Font.GothamBold
+	arrow.Text = "▾"
+	arrow.TextSize = 14
+	arrow.TextColor3 = Theme.SubText
+	arrow.ZIndex = 9
+	arrow.Parent = row
+
+	row.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			currentIndex += 1
+			if currentIndex > #values then
+				currentIndex = 1
+			end
+			value.Text = values[currentIndex]
+			playUISound("rbxassetid://9118823103", 0.2, 1.02)
+			if onChanged then
+				onChanged(values[currentIndex])
+			end
+		end
+	end)
+
+	return row, value
+end
+
+local function createKeybindPicker(parent: Instance, text: string, defaultKey: Enum.KeyCode, prompt: string, onChanged: ((Enum.KeyCode) -> ())?)
+	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(12, 0)
+	label.Size = UDim2.new(0.56, 0, 1, 0)
+	label.Font = Enum.Font.GothamMedium
+	label.Text = text
 	label.TextSize = 13
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.TextColor3 = Theme.Text
@@ -933,7 +740,7 @@ local function createKeybindPicker(parent: Instance, labelText: string, defaultK
 	value.BackgroundTransparency = 1
 	value.AnchorPoint = Vector2.new(1, 0)
 	value.Position = UDim2.new(1, -12, 0, 0)
-	value.Size = UDim2.new(0.35, 0, 1, 0)
+	value.Size = UDim2.new(0.34, 0, 1, 0)
 	value.Font = Enum.Font.GothamSemibold
 	value.Text = defaultKey.Name
 	value.TextSize = 12
@@ -945,12 +752,12 @@ local function createKeybindPicker(parent: Instance, labelText: string, defaultK
 	local waiting = false
 
 	row.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and not State.WaitingForKeybind then
 			waiting = true
 			State.WaitingForKeybind = true
 			value.Text = "Press..."
 			value.TextColor3 = Theme.Accent
-			notify("Settings", "Press any keyboard key to bind hide / show menu.", 2.4)
+			notify("Keybind", prompt, 2.2)
 		end
 	end)
 
@@ -963,181 +770,121 @@ local function createKeybindPicker(parent: Instance, labelText: string, defaultK
 			State.WaitingForKeybind = false
 			value.Text = input.KeyCode.Name
 			value.TextColor3 = Theme.SubText
+			playUISound("rbxassetid://9118823103", 0.2, 1.02)
 			if onChanged then
 				onChanged(input.KeyCode)
 			end
-			playUISound("rbxassetid://9118823103", 0.22)
-			notify("Settings", "Menu key changed to " .. input.KeyCode.Name, 2.6)
 		end
 	end)
 
 	return row, value
 end
 
-local combatPage = createPage("Combat")
-local playersPage = createPage("Players")
-local previewPage = createPage("Preview")
-local settingsPage = createPage("Settings")
+local function createPresetChip(parent: Instance, text: string, color: Color3, callback: (() -> ())?)
+	local chip = createFrame(parent, UDim2.fromOffset(120, 34), UDim2.new(), Theme.Soft, 9, 10)
 
-local subTabsByPage = {
-	Combat = {"Aim", "FOV", "Weapon"},
-	Players = {"ESP", "Colors", "Local"},
-	Preview = {"Character", "Card", "Style"},
-	Settings = {"Menu", "Theme", "Audio"},
-}
+	local swatch = Instance.new("Frame")
+	swatch.Position = UDim2.fromOffset(9, 9)
+	swatch.Size = UDim2.fromOffset(16, 16)
+	swatch.BackgroundColor3 = color
+	swatch.ZIndex = 10
+	swatch.Parent = chip
+	makeCorner(swatch, 5)
 
-local previewZoomValue = 90
-local previewYaw = 180
-local previewToggleSetter
-local espBoxColorPreview
-local espNameColorPreview
-local espSkeletonColorPreview
-local keybindValueLabel
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Position = UDim2.fromOffset(32, 0)
+	label.Size = UDim2.new(1, -40, 1, 0)
+	label.Font = Enum.Font.GothamSemibold
+	label.Text = text
+	label.TextSize = 12
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextColor3 = Theme.Text
+	label.ZIndex = 10
+	label.Parent = chip
 
-local function buildDualPage(pageName: string, page: Frame, leftTitle: string, rightTitle: string, leftItems, rightItems)
-	local left = makeSection(page, leftTitle, UDim2.new(0.5, -8, 1, 0), UDim2.new(0, 0, 0, 0))
-	local right = makeSection(page, rightTitle, UDim2.new(0.5, -8, 1, 0), UDim2.new(0.5, 8, 0, 0))
+	chip.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			playUISound("rbxassetid://9118823103", 0.18, 1.03)
+			if callback then
+				callback()
+			end
+		end
+	end)
 
-	for _, entry in ipairs(leftItems) do
-		local row = entry.Build(left)
-		registerControl(pageName, row, entry.Search, entry.Sub)
-	end
+	return chip
+end
 
-	for _, entry in ipairs(rightItems) do
-		local row = entry.Build(right)
-		registerControl(pageName, row, entry.Search, entry.Sub)
+local function updatePageButtons()
+	for name, button in pairs(pageButtons) do
+		local active = name == currentPage
+		local lbl = button:FindFirstChildOfClass("TextLabel")
+		tween(button, TweenInfo.new(0.15), {
+			BackgroundColor3 = active and Theme.AccentDark or Theme.Soft,
+		})
+		if lbl then
+			tween(lbl, TweenInfo.new(0.15), {
+				TextColor3 = active and Theme.Text or Theme.SubText,
+			})
+		end
 	end
 end
 
-buildDualPage("Combat", combatPage, "Targeting", "Precision", {
-	{Sub = "Aim", Search = "combat visual only", Build = function(p) return createInfoLabel(p, "Combat controls are demonstration-only and do not perform aiming.") end},
-	{Sub = "Aim", Search = "enable aim", Build = function(p) local row = createToggle(p, "Enable Aim", false) return row end},
-	{Sub = "Aim", Search = "aim target part", Build = function(p) local row = createDropdown(p, "Aim Target Part", {"Head", "Chest", "Nearest"}, 1) return row end},
-	{Sub = "Aim", Search = "aim smooth", Build = function(p) local row = createSlider(p, "Aim Smooth", 1, 20, 8) return row end},
-	{Sub = "Aim", Search = "sticky aim", Build = function(p) local row = createToggle(p, "Sticky Aim", false) return row end},
-	{Sub = "FOV", Search = "show fov circle", Build = function(p) local row = createToggle(p, "Show FOV Circle", false) return row end},
-	{Sub = "FOV", Search = "fov radius", Build = function(p) local row = createSlider(p, "FOV Radius", 40, 400, 150) return row end},
-	{Sub = "FOV", Search = "fov thickness", Build = function(p) local row = createSlider(p, "FOV Thickness", 1, 8, 2) return row end},
-	{Sub = "FOV", Search = "filled fov", Build = function(p) local row = createToggle(p, "Filled FOV", false) return row end},
-}, {
-	{Sub = "Weapon", Search = "prediction", Build = function(p) local row = createToggle(p, "Prediction", false) return row end},
-	{Sub = "Weapon", Search = "trigger demo", Build = function(p) local row = createToggle(p, "Trigger Demo", false) return row end},
-	{Sub = "Weapon", Search = "recoil control demo", Build = function(p) local row = createToggle(p, "Recoil Control Demo", false) return row end},
-	{Sub = "Weapon", Search = "accuracy profile", Build = function(p) local row = createDropdown(p, "Accuracy Profile", {"Balanced", "Aggressive", "Soft"}, 1) return row end},
-	{Sub = "Weapon", Search = "weapon response", Build = function(p) local row = createSlider(p, "Weapon Response", 0, 100, 64) return row end},
-	{Sub = "Weapon", Search = "save combat preset", Build = function(p)
-		local row = createButton(p, "Save Combat Preset")
-		row.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				notify("Combat", "Visual combat preset saved.", 2.8)
-				playUISound("rbxassetid://9118823103", 0.22)
-			end
-		end)
-		return row
-	end},
-})
+local function applySearch(query: string)
+	query = string.lower(query)
+	for _, item in ipairs(controlsByPage[currentPage] or {}) do
+		item.Row.Visible = (query == "") or (string.find(item.Text, query, 1, true) ~= nil)
+	end
+end
 
-buildDualPage("Players", playersPage, "ESP Visuals", "Colors / Local", {
-	{Sub = "ESP", Search = "players visual only", Build = function(p) return createInfoLabel(p, "Player options are visual UI mockup only and do not render ESP.") end},
-	{Sub = "ESP", Search = "enable esp", Build = function(p) local row = createToggle(p, "Enable ESP", false) return row end},
-	{Sub = "ESP", Search = "box esp", Build = function(p) local row = createToggle(p, "Box ESP", false) return row end},
-	{Sub = "ESP", Search = "name esp", Build = function(p) local row = createToggle(p, "Name ESP", false) return row end},
-	{Sub = "ESP", Search = "health bar", Build = function(p) local row = createToggle(p, "Health Bar", false) return row end},
-	{Sub = "ESP", Search = "skeleton esp", Build = function(p) local row = createToggle(p, "Skeleton ESP", false) return row end},
-	{Sub = "ESP", Search = "distance esp", Build = function(p) local row = createToggle(p, "Distance ESP", false) return row end},
-	{Sub = "ESP", Search = "weapon text", Build = function(p) local row = createToggle(p, "Weapon Text", false) return row end},
-}, {
-	{Sub = "Colors", Search = "esp box color", Build = function(p) local row, swatch = createColorPreviewRow(p, "ESP Box Color", Color3.fromRGB(255, 80, 80)); espBoxColorPreview = swatch; return row end},
-	{Sub = "Colors", Search = "esp name color", Build = function(p) local row, swatch = createColorPreviewRow(p, "ESP Name Color", Color3.fromRGB(255, 255, 255)); espNameColorPreview = swatch; return row end},
-	{Sub = "Colors", Search = "esp skeleton color", Build = function(p) local row, swatch = createColorPreviewRow(p, "ESP Skeleton Color", Theme.Accent); espSkeletonColorPreview = swatch; return row end},
-	{Sub = "Colors", Search = "esp color source", Build = function(p) local row = createDropdown(p, "Color Source", {"Custom", "Accent", "Team"}, 1) return row end},
-	{Sub = "Local", Search = "show character preview", Build = function(p)
-		local row, setter = createToggle(p, "Show Character Preview", false, function(v)
-			State.PreviewVisible = v
-			previewCard.Visible = v and State.MenuOpen
-			statStatus.Text = v and "Loaded" or "Hidden"
-		end)
-		previewToggleSetter = setter
-		return row
-	end},
-	{Sub = "Local", Search = "preview zoom", Build = function(p) local row = createSlider(p, "Preview Zoom", 50, 130, 90, function(v) previewZoomValue = v end) return row end},
-	{Sub = "Local", Search = "preview rotate", Build = function(p) local row = createSlider(p, "Preview Rotate", 0, 360, 180, function(v) previewYaw = v end) return row end},
-	{Sub = "Local", Search = "recenter preview", Build = function(p)
-		local row = createButton(p, "Recenter Preview")
-		row.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				previewZoomValue = 90
-				previewYaw = 180
-				notify("Preview", "Character preview recentered.", 2.6)
-			end
-		end)
-		return row
-	end},
-})
+local function showPage(name: string)
+	currentPage = name
+	for pageName, page in pairs(pages) do
+		page.Visible = pageName == name
+	end
+	updatePageButtons()
+	applySearch(searchBox.Text)
+end
 
-buildDualPage("Preview", previewPage, "Character Card", "Visual Style", {
-	{Sub = "Character", Search = "character panel visible", Build = function(p)
-		local row = createToggle(p, "Character Panel Visible", false, function(v)
-			State.PreviewVisible = v
-			previewCard.Visible = v and State.MenuOpen
-			statStatus.Text = v and "Loaded" or "Hidden"
-			if previewToggleSetter then previewToggleSetter(v) end
-		end)
-		return row
-	end},
-	{Sub = "Character", Search = "character lighting", Build = function(p) local row = createSlider(p, "Character Lighting", 0, 100, 70) return row end},
-	{Sub = "Character", Search = "viewport fov", Build = function(p) local row = createSlider(p, "Viewport FOV", 20, 60, 32, function(v) if viewport.CurrentCamera then viewport.CurrentCamera.FieldOfView = v end end) return row end},
-	{Sub = "Card", Search = "preview card mode", Build = function(p) local row = createDropdown(p, "Preview Card Mode", {"Full", "Compact", "Minimal"}, 1, function(v) statLayout.Text = v end) return row end},
-	{Sub = "Card", Search = "preview stats", Build = function(p) local row = createToggle(p, "Preview Stats", false, function(v) previewStats.Visible = v end) return row end},
-}, {
-	{Sub = "Style", Search = "menu glow", Build = function(p) local row = createToggle(p, "Menu Glow", true, function(v) State.GlowEnabled = v aura.Visible = v and State.MenuOpen end) return row end},
-	{Sub = "Style", Search = "frame texture", Build = function(p) local row = createToggle(p, "Frame Texture", true, function(v) setTextureVisible(v) end) return row end},
-	{Sub = "Style", Search = "menu opacity", Build = function(p) local row = createSlider(p, "Menu Opacity", 70, 100, 100, function(v) main.BackgroundTransparency = 1 - (v/100) end) return row end},
-	{Sub = "Style", Search = "style preset", Build = function(p) local row = createDropdown(p, "Style Preset", {"Premium", "Carbon", "Midnight"}, 1, function(v) statPreset.Text = v end) return row end},
-	{Sub = "Style", Search = "refresh style", Build = function(p)
-		local row = createButton(p, "Refresh Style")
-		row.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				notify("Preview", "Premium style refreshed.", 2.5)
-			end
-		end)
-		return row
-	end},
-})
+local function setAccentColor(color: Color3)
+	Theme.Accent = color
+	Theme.AccentDark = Color3.fromRGB(
+		math.max(0, math.floor(color.R * 255 + 0.5) - 70),
+		math.max(0, math.floor(color.G * 255 + 0.5) - 70),
+		math.max(0, math.floor(color.B * 255 + 0.5) - 70)
+	)
 
-buildDualPage("Settings", settingsPage, "Menu / Controls", "Theme / Audio", {
-	{Sub = "Menu", Search = "menu blur", Build = function(p) local row = createToggle(p, "Menu Blur", true, function(v) State.BlurEnabled = v if not v then blur.Size = 0 elseif State.MenuOpen then blur.Size = 14 end end) return row end},
-	{Sub = "Menu", Search = "hide show menu", Build = function(p) local row, value = createKeybindPicker(p, "Hide / Show Menu", State.HideKey, function(k) State.HideKey = k end); keybindValueLabel = value; return row end},
-	{Sub = "Menu", Search = "ui scale", Build = function(p) local row = createSlider(p, "UI Scale", 80, 120, 100, function(v) State.UIScale = v/100 scaleRoot.Scale = State.UIScale end) return row end},
-	{Sub = "Menu", Search = "menu animations", Build = function(p) local row = createToggle(p, "Menu Animations", true) return row end},
-	{Sub = "Menu", Search = "color menu open", Build = function(p) local row = createButton(p, "Color Menu") row.Name = "OpenColorMenuButton" return row end},
-}, {
-	{Sub = "Theme", Search = "notifications", Build = function(p) local row = createToggle(p, "Notifications", true, function(v) State.NotificationsEnabled = v end) return row end},
-	{Sub = "Theme", Search = "notification duration", Build = function(p) local row = createSlider(p, "Notification Duration", 2, 10, 4, function(v) State.NotificationDuration = v end) return row end},
-	{Sub = "Audio", Search = "open close sound", Build = function(p) local row = createToggle(p, "Open / Close Sound", true, function(v) State.SoundsEnabled = v end) return row end},
-	{Sub = "Audio", Search = "theme preset", Build = function(p) local row = createDropdown(p, "Theme Preset", {"Red Carbon", "Violet Pulse", "Ocean Blue"}, 1, function(v)
-		if v == "Red Carbon" then setAccentColor(Color3.fromRGB(186, 30, 40))
-		elseif v == "Violet Pulse" then setAccentColor(Color3.fromRGB(137, 84, 223))
-		elseif v == "Ocean Blue" then setAccentColor(Color3.fromRGB(61, 117, 232)) end
-		statTheme.Text = v
-	end) return row end},
-	{Sub = "Audio", Search = "reset interface", Build = function(p)
-		local row = createButton(p, "Reset Interface")
-		row.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 then
-				setAccentColor(Color3.fromRGB(186, 30, 40))
-				State.HideKey = Enum.KeyCode.Insert
-				if keybindValueLabel then keybindValueLabel.Text = State.HideKey.Name end
-				scaleRoot.Scale = 1
-				statTheme.Text = "Custom"
-				notify("Settings", "Interface reset to default.", 2.8)
-			end
-		end)
-		return row
-	end},
-})
+	for _, item in ipairs(liveAccentObjects) do
+		if item.Obj and item.Obj.Parent then
+			pcall(function()
+				item.Obj[item.Prop] = item.Dark and Theme.AccentDark or Theme.Accent
+			end)
+		end
+	end
 
-local function makeTabButton(parent: Instance, text: string, width: number, callback)
+	for _, item in ipairs(activeTogglePills) do
+		if item.Pill and item.Pill.Parent and item.GetState() then
+			item.Pill.BackgroundColor3 = Theme.Accent
+		end
+	end
+
+	for _, gradient in ipairs(gradientObjects) do
+		if gradient and gradient.Parent then
+			gradient.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Theme.Accent),
+				ColorSequenceKeypoint.new(1, Theme.AccentDark),
+			})
+		end
+	end
+
+	for _, updater in ipairs(dynamicAccentUpdaters) do
+		updater()
+	end
+
+	updatePageButtons()
+end
+
+local function makeTabButton(parent: Instance, text: string, width: number, callback: (() -> ())?)
 	local btn = createFrame(parent, UDim2.fromOffset(width, 34), UDim2.new(), Theme.Soft, 11, 11)
 
 	local label = Instance.new("TextLabel")
@@ -1152,487 +899,184 @@ local function makeTabButton(parent: Instance, text: string, width: number, call
 
 	btn.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			callback()
 			playUISound("rbxassetid://9118823103", 0.2, 1.03)
+			if callback then
+				callback()
+			end
 		end
 	end)
 
 	return btn
 end
 
-local function updatePageButtons()
-	for name, btn in pairs(pageButtons) do
-		local active = name == currentPage
-		local lbl = btn:FindFirstChildOfClass("TextLabel")
-		tween(btn, TweenInfo.new(0.15), {BackgroundColor3 = active and Theme.AccentDark or Theme.Soft})
-		if lbl then
-			tween(lbl, TweenInfo.new(0.15), {TextColor3 = active and Theme.Text or Theme.SubText})
-		end
-	end
+local aimPage = createPage("Aim")
+local visualPage = createPage("Visual")
+local settingsPage = createPage("Settings")
+
+local function buildAimPage()
+	local left = makeSection(aimPage, "Aim", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Compact targeting layout")
+	local right = makeSection(aimPage, "FOV", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Premium ring controls")
+
+	local row
+	row = createInfoLabel(left, "Aim controls are interface-only and do not perform aiming.")
+	registerControl("Aim", row, "info interface only aim demo")
+	row = createToggle(left, "Enable Aim (Demo)", false)
+	registerControl("Aim", row, "enable aim demo")
+	row = createKeybindPicker(left, "Aim Key", State.AimKey, "Press a key for the Aim button.", function(key)
+		State.AimKey = key
+	end)
+	registerControl("Aim", row, "aim key bind")
+	row = createSlider(left, "Aim Smooth", 1, 20, 8)
+	registerControl("Aim", row, "aim smooth")
+	row = createDropdown(left, "Target Part", {"Head", "Chest", "Nearest"}, 1)
+	registerControl("Aim", row, "target part head chest nearest")
+	row = createButton(left, "Save Aim Layout", function()
+		notify("Aim", "Compact aim layout saved.", 2.4)
+	end)
+	registerControl("Aim", row, "save aim layout")
+
+	row = createToggle(right, "Show FOV Ring", false)
+	registerControl("Aim", row, "show fov ring")
+	row = createSlider(right, "FOV Radius", 40, 400, 150)
+	registerControl("Aim", row, "fov radius")
+	row = createSlider(right, "FOV Thickness", 1, 8, 2)
+	registerControl("Aim", row, "fov thickness")
+	row = createToggle(right, "Filled FOV", false)
+	registerControl("Aim", row, "filled fov")
+	row = createInfoLabel(right, "FOV settings are visual placeholders for the menu.")
+	registerControl("Aim", row, "fov placeholder visual")
 end
 
-local function updateSubButtons()
-	for name, btn in pairs(subTabButtons) do
-		local active = name == currentSub
-		local lbl = btn:FindFirstChildOfClass("TextLabel")
-		tween(btn, TweenInfo.new(0.15), {BackgroundColor3 = active and Theme.AccentDark or Theme.Soft})
-		if lbl then
-			tween(lbl, TweenInfo.new(0.15), {TextColor3 = active and Theme.Text or Theme.SubText})
-		end
-	end
-end
+local function buildVisualPage()
+	local left = makeSection(visualPage, "Visual", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Small but premium visuals")
+	local right = makeSection(visualPage, "Theme", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Accent follows active style")
 
-local function applySearch(query: string)
-	query = string.lower(query)
-	for _, item in ipairs(controlsByPage[currentPage] or {}) do
-		local visibleBySub = item.Sub == currentSub
-		local visibleByText = (query == "") or (string.find(item.Text, query, 1, true) ~= nil)
-		item.Row.Visible = visibleBySub and visibleByText
-	end
-end
+	local row
+	row = createInfoLabel(left, "Visual options are UI-only and do not render ESP or overlays.")
+	registerControl("Visual", row, "visual ui only no esp")
+	row = createToggle(left, "Enable Visual Overlay (Demo)", false)
+	registerControl("Visual", row, "enable visual overlay demo")
+	row = createToggle(left, "Name Tags (Demo)", false)
+	registerControl("Visual", row, "name tags demo")
+	row = createToggle(left, "Box Outline (Demo)", false)
+	registerControl("Visual", row, "box outline demo")
+	row = createToggle(left, "Health Bar (Demo)", false)
+	registerControl("Visual", row, "health bar demo")
+	row = createToggle(left, "Skeleton Lines (Demo)", false)
+	registerControl("Visual", row, "skeleton lines demo")
 
-local function rebuildSubTabs(pageName: string)
-	for _, child in ipairs(subTabsBar:GetChildren()) do
-		if child:IsA("Frame") then
-			child:Destroy()
-		end
-	end
-	table.clear(subTabButtons)
+	local presetWrap = Instance.new("Frame")
+	presetWrap.BackgroundTransparency = 1
+	presetWrap.Size = UDim2.new(1, 0, 0, 76)
+	presetWrap.Parent = right
+	local presetLayout = addList(presetWrap, 8)
+	presetLayout.FillDirection = Enum.FillDirection.Horizontal
+	presetLayout.Wraps = true
+	presetLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	local presetCard = createFrame(right, UDim2.new(1, 0, 0, 96), UDim2.new(), Theme.Soft, 8, 10)
+	presetWrap.Parent = presetCard
+	presetWrap.Position = UDim2.fromOffset(10, 10)
+	presetWrap.Size = UDim2.new(1, -20, 1, -20)
+	registerControl("Visual", presetCard, "theme presets red violet blue emerald")
 
-	local items = subTabsByPage[pageName] or {"Overview"}
-	currentSub = items[1]
+	createPresetChip(presetWrap, "Red Carbon", Color3.fromRGB(186, 30, 40), function()
+		setAccentColor(Color3.fromRGB(186, 30, 40))
+		notify("Theme", "Red Carbon applied.", 2.0)
+	end)
+	createPresetChip(presetWrap, "Violet", Color3.fromRGB(137, 84, 223), function()
+		setAccentColor(Color3.fromRGB(137, 84, 223))
+		notify("Theme", "Violet applied.", 2.0)
+	end)
+	createPresetChip(presetWrap, "Ocean", Color3.fromRGB(61, 117, 232), function()
+		setAccentColor(Color3.fromRGB(61, 117, 232))
+		notify("Theme", "Ocean applied.", 2.0)
+	end)
+	createPresetChip(presetWrap, "Emerald", Color3.fromRGB(47, 188, 124), function()
+		setAccentColor(Color3.fromRGB(47, 188, 124))
+		notify("Theme", "Emerald applied.", 2.0)
+	end)
 
-	for _, tabName in ipairs(items) do
-		subTabButtons[tabName] = makeTabButton(subTabsBar, tabName, 82, function()
-			currentSub = tabName
-			updateSubButtons()
-			applySearch(searchBox.Text)
-		end)
-	end
-
-	updateSubButtons()
-	applySearch(searchBox.Text)
-end
-
-local function showPage(name: string)
-	currentPage = name
-	for pageName, page in pairs(pages) do
-		page.Visible = pageName == name
-	end
-	rebuildSubTabs(name)
-	updatePageButtons()
-end
-
-pageButtons.Combat = makeTabButton(tabsBar, "Combat", 114, function() showPage("Combat") end)
-pageButtons.Players = makeTabButton(tabsBar, "Players", 114, function() showPage("Players") end)
-pageButtons.Preview = makeTabButton(tabsBar, "Preview", 114, function() showPage("Preview") end)
-pageButtons.Settings = makeTabButton(tabsBar, "Settings", 114, function() showPage("Settings") end)
-
-local overlay = Instance.new("Frame")
-overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-overlay.BackgroundTransparency = 1
-overlay.Visible = false
-overlay.Size = UDim2.fromScale(1, 1)
-overlay.ZIndex = 40
-overlay.Parent = gui
-
-local colorModal = createFrame(overlay, UDim2.fromOffset(620, 480), UDim2.fromScale(0.5, 0.5) - UDim2.fromOffset(310, 240), Theme.BG2, 41, 16)
-colorModal.Visible = false
-addTextureOverlay(colorModal, 0.965)
-
-local modalGlow = Instance.new("ImageLabel")
-modalGlow.BackgroundTransparency = 1
-modalGlow.AnchorPoint = Vector2.new(0.5, 0.5)
-modalGlow.Position = UDim2.fromScale(0.5, 0.5)
-modalGlow.Size = UDim2.new(1, 110, 1, 110)
-modalGlow.Image = "rbxassetid://5028857084"
-modalGlow.ImageTransparency = 0.62
-modalGlow.ScaleType = Enum.ScaleType.Slice
-modalGlow.SliceCenter = Rect.new(24, 24, 276, 276)
-modalGlow.ImageColor3 = Theme.Accent
-modalGlow.ZIndex = 40
-modalGlow.Parent = colorModal
-registerAccentObject(modalGlow, "ImageColor3")
-
-local modalTitle = Instance.new("TextLabel")
-modalTitle.BackgroundTransparency = 1
-modalTitle.Position = UDim2.fromOffset(18, 14)
-modalTitle.Size = UDim2.new(1, -60, 0, 24)
-modalTitle.Font = Enum.Font.GothamBold
-modalTitle.Text = "Color Menu"
-modalTitle.TextSize = 18
-modalTitle.TextXAlignment = Enum.TextXAlignment.Left
-modalTitle.TextColor3 = Theme.Text
-modalTitle.ZIndex = 42
-modalTitle.Parent = colorModal
-
-local modalSub = Instance.new("TextLabel")
-modalSub.BackgroundTransparency = 1
-modalSub.Position = UDim2.fromOffset(18, 36)
-modalSub.Size = UDim2.new(1, -60, 0, 18)
-modalSub.Font = Enum.Font.Gotham
-modalSub.Text = "Advanced premium accent editor"
-modalSub.TextSize = 12
-modalSub.TextXAlignment = Enum.TextXAlignment.Left
-modalSub.TextColor3 = Theme.SubText
-modalSub.ZIndex = 42
-modalSub.Parent = colorModal
-
-local modalClose = Instance.new("TextButton")
-modalClose.AutoButtonColor = false
-modalClose.AnchorPoint = Vector2.new(1, 0)
-modalClose.Position = UDim2.new(1, -16, 0, 12)
-modalClose.Size = UDim2.fromOffset(22, 22)
-modalClose.BackgroundTransparency = 1
-modalClose.Font = Enum.Font.GothamBold
-modalClose.Text = "×"
-modalClose.TextSize = 18
-modalClose.TextColor3 = Theme.SubText
-modalClose.ZIndex = 42
-modalClose.Parent = colorModal
-
-local leftPanel = createFrame(colorModal, UDim2.new(0.43, -10, 1, -88), UDim2.fromOffset(16, 62), Theme.Card, 42, 12)
-local rightPanel = createFrame(colorModal, UDim2.new(0.57, -22, 1, -88), UDim2.new(0.43, 14, 0, 62), Theme.Card, 42, 12)
-
-local presetsTitle = Instance.new("TextLabel")
-presetsTitle.BackgroundTransparency = 1
-presetsTitle.Position = UDim2.fromOffset(14, 12)
-presetsTitle.Size = UDim2.new(1, -28, 0, 20)
-presetsTitle.Font = Enum.Font.GothamBold
-presetsTitle.Text = "Presets"
-presetsTitle.TextSize = 14
-presetsTitle.TextXAlignment = Enum.TextXAlignment.Left
-presetsTitle.TextColor3 = Theme.Text
-presetsTitle.ZIndex = 43
-presetsTitle.Parent = leftPanel
-
-local presetsListWrap = Instance.new("Frame")
-presetsListWrap.BackgroundTransparency = 1
-presetsListWrap.Position = UDim2.fromOffset(12, 42)
-presetsListWrap.Size = UDim2.new(1, -24, 1, -54)
-presetsListWrap.Parent = leftPanel
-addList(presetsListWrap, 8)
-
-local function createPresetItem(name: string, color: Color3)
-	local item = createFrame(presetsListWrap, UDim2.new(1, 0, 0, 44), UDim2.new(), Theme.Soft, 43, 10)
-
-	local swatch = Instance.new("Frame")
-	swatch.Position = UDim2.fromOffset(10, 10)
-	swatch.Size = UDim2.fromOffset(24, 24)
-	swatch.BackgroundColor3 = color
-	swatch.ZIndex = 44
-	swatch.Parent = item
-	makeCorner(swatch, 7)
-
-	local label = Instance.new("TextLabel")
-	label.BackgroundTransparency = 1
-	label.Position = UDim2.fromOffset(46, 0)
-	label.Size = UDim2.new(1, -56, 1, 0)
-	label.Font = Enum.Font.GothamMedium
-	label.Text = name
-	label.TextSize = 13
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextColor3 = Theme.Text
-	label.ZIndex = 44
-	label.Parent = item
-
-	item.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			setAccentColor(color)
-			if espSkeletonColorPreview then espSkeletonColorPreview.BackgroundColor3 = color end
-			statTheme.Text = name
-			notify("Colors", "Accent changed to " .. name, 2.7)
-			playUISound("rbxassetid://9118823103", 0.22)
+	row = createToggle(right, "Use Accent on Active Switches", true)
+	registerControl("Visual", row, "accent active switches")
+	row = createToggle(right, "Frame Texture", true, function(v)
+		State.TextureEnabled = v
+		for _, desc in ipairs(main:GetDescendants()) do
+			if desc:IsA("ImageLabel") and desc.Name == "TextureOverlay" then
+				desc.Visible = v
+			end
 		end
 	end)
+	registerControl("Visual", row, "frame texture")
+	row = createSlider(right, "Menu Opacity", 78, 100, 100, function(v)
+		main.BackgroundTransparency = 1 - (v / 100)
+	end)
+	registerControl("Visual", row, "menu opacity")
 end
 
-createPresetItem("Lotus Red", Color3.fromRGB(186, 30, 40))
-createPresetItem("Ruby Night", Color3.fromRGB(170, 28, 80))
-createPresetItem("Crimson Steel", Color3.fromRGB(214, 57, 57))
-createPresetItem("Violet Pulse", Color3.fromRGB(137, 84, 223))
-createPresetItem("Ocean Blue", Color3.fromRGB(61, 117, 232))
-createPresetItem("Emerald Luxe", Color3.fromRGB(46, 190, 128))
+local function buildSettingsPage()
+	local left = makeSection(settingsPage, "Settings", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Compact system controls")
+	local right = makeSection(settingsPage, "Premium", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Clean utility controls")
 
-local editorTitle = Instance.new("TextLabel")
-editorTitle.BackgroundTransparency = 1
-editorTitle.Position = UDim2.fromOffset(14, 12)
-editorTitle.Size = UDim2.new(1, -28, 0, 20)
-editorTitle.Font = Enum.Font.GothamBold
-editorTitle.Text = "Advanced Picker"
-editorTitle.TextSize = 14
-editorTitle.TextXAlignment = Enum.TextXAlignment.Left
-editorTitle.TextColor3 = Theme.Text
-editorTitle.ZIndex = 43
-editorTitle.Parent = rightPanel
-
-local livePreview = createFrame(rightPanel, UDim2.new(1, -28, 0, 90), UDim2.fromOffset(14, 42), Theme.Soft, 43, 10)
-local previewLabel = Instance.new("TextLabel")
-previewLabel.BackgroundTransparency = 1
-previewLabel.Position = UDim2.fromOffset(12, 8)
-previewLabel.Size = UDim2.new(1, -24, 0, 18)
-previewLabel.Font = Enum.Font.GothamBold
-previewLabel.Text = "Live Accent Preview"
-previewLabel.TextSize = 13
-previewLabel.TextXAlignment = Enum.TextXAlignment.Left
-previewLabel.TextColor3 = Theme.Text
-previewLabel.ZIndex = 44
-previewLabel.Parent = livePreview
-
-local previewFill = Instance.new("Frame")
-previewFill.Position = UDim2.fromOffset(12, 34)
-previewFill.Size = UDim2.new(1, -24, 0, 44)
-previewFill.BackgroundColor3 = Theme.Accent
-previewFill.ZIndex = 44
-previewFill.Parent = livePreview
-makeCorner(previewFill, 10)
-registerAccentObject(previewFill, "BackgroundColor3")
-
-local satValFrame = Instance.new("ImageLabel")
-satValFrame.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
-satValFrame.Position = UDim2.fromOffset(14, 146)
-satValFrame.Size = UDim2.fromOffset(230, 230)
-satValFrame.BorderSizePixel = 0
-satValFrame.ZIndex = 44
-satValFrame.Parent = rightPanel
-makeCorner(satValFrame, 10)
-
-local satWhite = Instance.new("UIGradient")
-satWhite.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
-})
-satWhite.Transparency = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 0),
-	NumberSequenceKeypoint.new(1, 1),
-})
-satWhite.Rotation = 0
-satWhite.Parent = satValFrame
-
-local satBlack = Instance.new("Frame")
-satBlack.Size = UDim2.fromScale(1, 1)
-satBlack.BackgroundTransparency = 1
-satBlack.ZIndex = 45
-satBlack.Parent = satValFrame
-
-local satBlackGrad = Instance.new("UIGradient")
-satBlackGrad.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-	ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0)),
-})
-satBlackGrad.Transparency = NumberSequence.new({
-	NumberSequenceKeypoint.new(0, 1),
-	NumberSequenceKeypoint.new(1, 0),
-})
-satBlackGrad.Rotation = 90
-satBlackGrad.Parent = satBlack
-
-local svCursor = Instance.new("Frame")
-svCursor.AnchorPoint = Vector2.new(0.5, 0.5)
-svCursor.Size = UDim2.fromOffset(14, 14)
-svCursor.Position = UDim2.fromScale(1, 0)
-svCursor.BackgroundColor3 = Theme.White
-svCursor.ZIndex = 46
-svCursor.Parent = satValFrame
-makeCorner(svCursor, 7)
-makeStroke(svCursor, Color3.fromRGB(0, 0, 0), 1, 0.2)
-
-local hueBar = Instance.new("Frame")
-hueBar.Position = UDim2.fromOffset(258, 146)
-hueBar.Size = UDim2.fromOffset(22, 230)
-hueBar.BackgroundColor3 = Theme.White
-hueBar.BorderSizePixel = 0
-hueBar.ZIndex = 44
-hueBar.Parent = rightPanel
-makeCorner(hueBar, 10)
-
-local hueGradient = Instance.new("UIGradient")
-hueGradient.Color = ColorSequence.new({
-	ColorSequenceKeypoint.new(0.0, Color3.fromRGB(255, 0, 0)),
-	ColorSequenceKeypoint.new(0.17, Color3.fromRGB(255, 255, 0)),
-	ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
-	ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 255)),
-	ColorSequenceKeypoint.new(0.67, Color3.fromRGB(0, 0, 255)),
-	ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
-	ColorSequenceKeypoint.new(1.0, Color3.fromRGB(255, 0, 0)),
-})
-hueGradient.Rotation = 90
-hueGradient.Parent = hueBar
-
-local hueCursor = Instance.new("Frame")
-hueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
-hueCursor.Size = UDim2.new(1, 6, 0, 4)
-hueCursor.Position = UDim2.new(0.5, 0, 0, 0)
-hueCursor.BackgroundColor3 = Theme.White
-hueCursor.ZIndex = 46
-hueCursor.Parent = hueBar
-makeCorner(hueCursor, 3)
-
-local rgbReadout = createFrame(rightPanel, UDim2.new(1, -28, 0, 40), UDim2.fromOffset(14, 388), Theme.Soft, 43, 10)
-local rgbText = Instance.new("TextLabel")
-rgbText.BackgroundTransparency = 1
-rgbText.Position = UDim2.fromOffset(12, 0)
-rgbText.Size = UDim2.new(1, -24, 1, 0)
-rgbText.Font = Enum.Font.GothamMedium
-rgbText.Text = "RGB: 186, 30, 40"
-rgbText.TextSize = 13
-rgbText.TextXAlignment = Enum.TextXAlignment.Left
-rgbText.TextColor3 = Theme.Text
-rgbText.ZIndex = 44
-rgbText.Parent = rgbReadout
-
-local applyBtn = createButton(rightPanel, "Apply Accent")
-applyBtn.Position = UDim2.new(0, 14, 1, -56)
-applyBtn.Size = UDim2.new(1, -28, 0, 42)
-
-local hsvH, hsvS, hsvV = 0, 0.84, 0.73
-
-local function updateHSVVisuals()
-	local hueColor = Color3.fromHSV(hsvH, 1, 1)
-	satValFrame.BackgroundColor3 = hueColor
-	svCursor.Position = UDim2.new(hsvS, 0, 1 - hsvV, 0)
-	hueCursor.Position = UDim2.new(0.5, 0, hsvH, 0)
-
-	local final = Color3.fromHSV(hsvH, hsvS, hsvV)
-	previewFill.BackgroundColor3 = final
-	rgbText.Text = string.format("RGB: %d, %d, %d", math.floor(final.R * 255 + 0.5), math.floor(final.G * 255 + 0.5), math.floor(final.B * 255 + 0.5))
-end
-
-local function openColorModal(state: boolean)
-	if state then
-		overlay.Visible = true
-		colorModal.Visible = true
-		tween(overlay, TweenInfo.new(0.16), {BackgroundTransparency = 0.28})
-		playUISound("rbxassetid://9118823103", 0.2)
-	else
-		tween(overlay, TweenInfo.new(0.16), {BackgroundTransparency = 1})
-		task.delay(0.18, function()
-			overlay.Visible = false
-			colorModal.Visible = false
-		end)
-	end
-end
-
-local svDragging = false
-local hueDragging = false
-
-local function updateSV(mousePos: Vector2)
-	local alphaX = math.clamp((mousePos.X - satValFrame.AbsolutePosition.X) / satValFrame.AbsoluteSize.X, 0, 1)
-	local alphaY = math.clamp((mousePos.Y - satValFrame.AbsolutePosition.Y) / satValFrame.AbsoluteSize.Y, 0, 1)
-	hsvS = alphaX
-	hsvV = 1 - alphaY
-	updateHSVVisuals()
-end
-
-local function updateHue(mousePos: Vector2)
-	local alphaY = math.clamp((mousePos.Y - hueBar.AbsolutePosition.Y) / hueBar.AbsoluteSize.Y, 0, 1)
-	hsvH = alphaY
-	updateHSVVisuals()
-end
-
-satValFrame.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		svDragging = true
-		updateSV(UserInputService:GetMouseLocation())
-	end
-end)
-
-hueBar.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		hueDragging = true
-		updateHue(UserInputService:GetMouseLocation())
-	end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement then
-		if svDragging then updateSV(UserInputService:GetMouseLocation()) end
-		if hueDragging then updateHue(UserInputService:GetMouseLocation()) end
-	end
-end)
-
-UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		svDragging = false
-		hueDragging = false
-	end
-end)
-
-applyBtn.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		local final = Color3.fromHSV(hsvH, hsvS, hsvV)
-		setAccentColor(final)
-		if espSkeletonColorPreview then espSkeletonColorPreview.BackgroundColor3 = final end
-		statTheme.Text = "Custom"
-		openColorModal(false)
-		notify("Colors", "Custom accent applied.", 2.8)
-	end
-end)
-
-overlay.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Target == overlay then
-		openColorModal(false)
-	end
-end)
-
-modalClose.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
-		openColorModal(false)
-	end
-end)
-
-for _, page in pairs(pages) do
-	for _, d in ipairs(page:GetDescendants()) do
-		if d:IsA("Frame") and d.Name == "OpenColorMenuButton" then
-			d.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					openColorModal(true)
-				end
-			end)
+	local row
+	row = createToggle(left, "Menu Blur", true, function(v)
+		State.BlurEnabled = v
+		if not v then
+			blur.Size = 0
+		elseif State.MenuOpen then
+			blur.Size = 14
 		end
-	end
+	end)
+	registerControl("Settings", row, "menu blur")
+	row = createKeybindPicker(left, "Hide / Show Menu", State.HideKey, "Press a key for hide/show menu.", function(key)
+		State.HideKey = key
+	end)
+	registerControl("Settings", row, "hide show menu keybind")
+	row = createSlider(left, "UI Scale", 85, 120, 100, function(v)
+		State.UIScale = v / 100
+		scaleRoot.Scale = State.UIScale
+	end)
+	registerControl("Settings", row, "ui scale")
+	row = createToggle(left, "Open / Close Sound", true, function(v)
+		State.SoundsEnabled = v
+	end)
+	registerControl("Settings", row, "open close sound")
+	row = createToggle(left, "Notifications", true, function(v)
+		State.NotificationsEnabled = v
+	end)
+	registerControl("Settings", row, "notifications")
+
+	row = createButton(right, "Reset Accent", function()
+		setAccentColor(Color3.fromRGB(186, 30, 40))
+		notify("Settings", "Accent reset to default.", 2.4)
+	end)
+	registerControl("Settings", row, "reset accent")
+	row = createButton(right, "Center UI", function()
+		root.Position = UDim2.fromScale(0.5, 0.5)
+		notify("Settings", "Menu recentered.", 2.2)
+	end)
+	registerControl("Settings", row, "center ui")
+	row = createInfoLabel(right, "The title word 'South' and active switches follow the selected accent automatically.")
+	registerControl("Settings", row, "south title accent switches automatic")
+	row = createInfoLabel(right, "This build stays compact and keeps only Aim, Visual and Settings.")
+	registerControl("Settings", row, "compact tabs aim visual settings only")
 end
+
+buildAimPage()
+buildVisualPage()
+buildSettingsPage()
+
+pageButtons.Aim = makeTabButton(tabsBar, "Aim", 110, function()
+	showPage("Aim")
+end)
+pageButtons.Visual = makeTabButton(tabsBar, "Visual", 110, function()
+	showPage("Visual")
+end)
+pageButtons.Settings = makeTabButton(tabsBar, "Settings", 118, function()
+	showPage("Settings")
+end)
 
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	applySearch(searchBox.Text)
-end)
-
-local previewModel: Model? = nil
-
-local function rebuildPreviewCharacter()
-	if previewModel then
-		previewModel:Destroy()
-		previewModel = nil
-	end
-
-	local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-	local model = Instance.new("Model")
-	model.Name = "PreviewRig"
-	model.Parent = viewport
-	previewModel = model
-
-	for _, obj in ipairs(char:GetChildren()) do
-		if obj:IsA("BasePart") or obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") then
-			obj:Clone().Parent = model
-		end
-	end
-
-	local cam = viewport.CurrentCamera
-	cam.FieldOfView = 32
-	model:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(previewYaw), 0))
-	cam.CFrame = CFrame.new(Vector3.new(0, 1.4, 7 - ((previewZoomValue - 90) / 25)), Vector3.new(0, 1.2, 0))
-
-	local light = Instance.new("PointLight")
-	light.Range = 16
-	light.Brightness = 2
-	light.Color = Color3.fromRGB(255, 235, 235)
-	light.Parent = cam
-end
-
-pcall(rebuildPreviewCharacter)
-LocalPlayer.CharacterAdded:Connect(function()
-	task.wait(1)
-	pcall(rebuildPreviewCharacter)
 end)
 
 local dragging = false
@@ -1660,21 +1104,19 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
-local function setOpen(state: boolean)
-	State.MenuOpen = state
+local function setOpen(openState: boolean)
+	State.MenuOpen = openState
+	main.Visible = openState
+	aura.Visible = openState
 
 	if State.BlurEnabled then
-		tween(blur, TweenInfo.new(0.18), {Size = state and 14 or 0})
+		tween(blur, TweenInfo.new(0.18), {Size = openState and 14 or 0})
 	else
 		blur.Size = 0
 	end
 
-	main.Visible = state
-	aura.Visible = state and State.GlowEnabled
-	previewCard.Visible = state and State.PreviewVisible
-
-	if state then
-		playUISound("rbxassetid://9118823103", 0.22, 1.03)
+	if openState then
+		playUISound("rbxassetid://9118823103", 0.20, 1.03)
 	else
 		playUISound("rbxassetid://9118828561", 0.16, 0.96)
 	end
@@ -1695,23 +1137,9 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	end
 end)
 
-showPage("Combat")
+updateTitle()
 setAccentColor(Theme.Accent)
-setTextureVisible(true)
+showPage("Aim")
 blur.Size = 14
-previewCard.Visible = false
-previewStats.Visible = false
-updateHSVVisuals()
-notify("Lotus X", "Premium visual interface loaded.", 3.8)
+notify("Lotus X", "Compact premium layout loaded.", 2.2)
 
-RunService.RenderStepped:Connect(function()
-	aura.ImageTransparency = 0.58 + (math.sin(os.clock() * 1.8) * 0.03 + 0.03)
-	if previewModel and previewModel.Parent then
-		pcall(function()
-			previewModel:PivotTo(CFrame.new(0, 0, 0) * CFrame.Angles(0, math.rad(previewYaw), 0))
-			if viewport.CurrentCamera then
-				viewport.CurrentCamera.CFrame = CFrame.new(Vector3.new(0, 1.4, 7 - ((previewZoomValue - 90) / 25)), Vector3.new(0, 1.2, 0))
-			end
-		end)
-	end
-end)
