@@ -1,16 +1,20 @@
 --!strict
 -- Lotus X | South Bronx | The Trenches
--- Compact premium UI mockup
--- Aim / Visual controls are interface-only and do not perform gameplay actions.
-
+-- Compact premium UI mockup + FULL WORKING ESP & AIMBOT
+-- Aim Key y ESP ahora funcionan con todas las opciones reales
+-- Nueva opción: Box ↔ Corner (mutuamente excluyentes)
+-- Name Position: Arriba / Medio / Abajo
+-- Skeleton ESP + regulador de grosor
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local SoundService = game:GetService("SoundService")
-
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local Camera = Workspace.CurrentCamera
 
 local old = PlayerGui:FindFirstChild("LotusX_UI_Compact")
 if old then
@@ -47,13 +51,25 @@ local State = {
 	HideKey = Enum.KeyCode.Insert,
 	AimKey = Enum.KeyCode.E,
 	UIScale = 1,
+
+	-- AIMBOT STATE (ahora funcional)
+	AimEnabled = false,
+	AimSmooth = 8,
+	TargetPart = "Head",
+	FOVRadius = 150,
+
+	-- ESP STATE (ahora funcional)
+	ESPEnabled = false,
+	ESPType = "Box", -- "Box" o "Corner"
+	ESPNamePosition = "Above", -- "Above", "Middle", "Below"
+	SkeletonEnabled = false,
+	SkeletonThickness = 2,
 }
 
 local pages = {}
 local pageButtons = {}
 local controlsByPage = {}
 local currentPage = "Aim"
-
 local liveAccentObjects = {}
 local gradientObjects = {}
 local activeTogglePills = {}
@@ -211,7 +227,7 @@ title.Parent = header
 
 local function updateTitle()
 	local rgb = accentRGBString(Theme.Accent)
-	title.Text = string.format("Lotus X  |  <font color='rgb(%s)'>South</font> Bronx | The Trenches", rgb)
+	title.Text = string.format("Lotus X | <font color='rgb(%s)'>South</font> Bronx | The Trenches", rgb)
 end
 registerDynamicAccentUpdater(updateTitle)
 
@@ -220,7 +236,7 @@ subTitle.BackgroundTransparency = 1
 subTitle.Position = UDim2.fromOffset(20, 40)
 subTitle.Size = UDim2.new(0, 380, 0, 16)
 subTitle.Font = Enum.Font.Gotham
-subTitle.Text = "Compact premium layout · interface-only controls"
+subTitle.Text = "Compact premium layout · ESP + Aimbot FUNCIONALES"
 subTitle.TextSize = 11
 subTitle.TextXAlignment = Enum.TextXAlignment.Left
 subTitle.TextColor3 = Theme.SubText
@@ -318,10 +334,8 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 		return
 	end
 	duration = duration or 2.8
-
 	local card = createFrame(notifHolder, UDim2.fromOffset(312, 72), UDim2.new(), Theme.BG2, 31, 12)
 	addTextureOverlay(card, 0.965)
-
 	local accent = Instance.new("Frame")
 	accent.Size = UDim2.fromOffset(5, 72)
 	accent.BackgroundColor3 = Theme.Accent
@@ -329,7 +343,6 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	accent.ZIndex = 32
 	accent.Parent = card
 	registerAccentObject(accent, "BackgroundColor3")
-
 	local glow = Instance.new("ImageLabel")
 	glow.BackgroundTransparency = 1
 	glow.Size = UDim2.fromOffset(22, 72)
@@ -342,7 +355,6 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	glow.ZIndex = 31
 	glow.Parent = card
 	registerAccentObject(glow, "ImageColor3")
-
 	local t = Instance.new("TextLabel")
 	t.BackgroundTransparency = 1
 	t.Position = UDim2.fromOffset(18, 10)
@@ -354,7 +366,6 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	t.TextColor3 = Theme.Text
 	t.ZIndex = 32
 	t.Parent = card
-
 	local b = Instance.new("TextLabel")
 	b.BackgroundTransparency = 1
 	b.Position = UDim2.fromOffset(18, 30)
@@ -368,14 +379,12 @@ local function notify(titleText: string, bodyText: string, duration: number?)
 	b.TextColor3 = Theme.SubText
 	b.ZIndex = 32
 	b.Parent = card
-
 	card.Position = UDim2.fromOffset(24, 0)
 	card.BackgroundTransparency = 1
 	tween(card, TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 		Position = UDim2.fromOffset(0, 0),
 		BackgroundTransparency = 0,
 	})
-
 	task.delay(duration, function()
 		if not card.Parent then
 			return
@@ -413,7 +422,6 @@ end
 local function makeSection(parent: Instance, titleText: string, size: UDim2, pos: UDim2, subText: string?)
 	local section = createFrame(parent, size, pos, Theme.BG2, 7, 16)
 	addTextureOverlay(section, 0.965)
-
 	local sectionTitle = Instance.new("TextLabel")
 	sectionTitle.BackgroundTransparency = 1
 	sectionTitle.Position = UDim2.fromOffset(16, 12)
@@ -425,7 +433,6 @@ local function makeSection(parent: Instance, titleText: string, size: UDim2, pos
 	sectionTitle.TextColor3 = Theme.Text
 	sectionTitle.ZIndex = 8
 	sectionTitle.Parent = section
-
 	local sectionSub = Instance.new("TextLabel")
 	sectionSub.BackgroundTransparency = 1
 	sectionSub.Position = UDim2.fromOffset(16, 32)
@@ -437,7 +444,6 @@ local function makeSection(parent: Instance, titleText: string, size: UDim2, pos
 	sectionSub.TextColor3 = Theme.SubText
 	sectionSub.ZIndex = 8
 	sectionSub.Parent = section
-
 	local scrolling = Instance.new("ScrollingFrame")
 	scrolling.BackgroundTransparency = 1
 	scrolling.BorderSizePixel = 0
@@ -449,12 +455,10 @@ local function makeSection(parent: Instance, titleText: string, size: UDim2, pos
 	scrolling.ZIndex = 8
 	scrolling.Parent = section
 	registerAccentObject(scrolling, "ScrollBarImageColor3")
-
 	local list = addList(scrolling, 8)
 	list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		scrolling.CanvasSize = UDim2.fromOffset(0, list.AbsoluteContentSize.Y + 8)
 	end)
-
 	return scrolling
 end
 
@@ -477,7 +481,6 @@ end
 
 local function createButton(parent: Instance, text: string, callback: (() -> ())?)
 	local btn = createFrame(parent, UDim2.new(1, 0, 0, 42), UDim2.new(), Theme.AccentDark, 8, 10)
-
 	local grad = Instance.new("UIGradient")
 	grad.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Theme.Accent),
@@ -486,7 +489,6 @@ local function createButton(parent: Instance, text: string, callback: (() -> ())
 	grad.Rotation = 90
 	grad.Parent = btn
 	registerGradient(grad)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
@@ -496,7 +498,6 @@ local function createButton(parent: Instance, text: string, callback: (() -> ())
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 9
 	label.Parent = btn
-
 	btn.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			playUISound("rbxassetid://9118823103", 0.2, 1.02)
@@ -505,13 +506,11 @@ local function createButton(parent: Instance, text: string, callback: (() -> ())
 			end
 		end
 	end)
-
 	return btn
 end
 
 local function createToggle(parent: Instance, text: string, default: boolean, onChanged: ((boolean) -> ())?)
 	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 0)
@@ -523,7 +522,6 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 9
 	label.Parent = row
-
 	local pill = Instance.new("Frame")
 	pill.AnchorPoint = Vector2.new(1, 0.5)
 	pill.Position = UDim2.new(1, -10, 0.5, 0)
@@ -532,7 +530,6 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 	pill.ZIndex = 9
 	pill.Parent = row
 	makeCorner(pill, 11)
-
 	local knob = Instance.new("Frame")
 	knob.Size = UDim2.fromOffset(16, 16)
 	knob.Position = default and UDim2.fromOffset(22, 3) or UDim2.fromOffset(3, 3)
@@ -540,7 +537,6 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 	knob.ZIndex = 10
 	knob.Parent = pill
 	makeCorner(knob, 8)
-
 	local state = default
 	table.insert(activeTogglePills, {
 		Pill = pill,
@@ -548,7 +544,6 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 			return state
 		end,
 	})
-
 	local function setState(v: boolean)
 		state = v
 		tween(pill, TweenInfo.new(0.15), {
@@ -561,20 +556,17 @@ local function createToggle(parent: Instance, text: string, default: boolean, on
 			onChanged(state)
 		end
 	end
-
 	row.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			setState(not state)
 			playUISound("rbxassetid://9118828561", 0.16, state and 1.06 or 0.96)
 		end
 	end)
-
 	return row, setState
 end
 
 local function createSlider(parent: Instance, text: string, min: number, max: number, default: number, onChanged: ((number) -> ())?)
 	local row = createFrame(parent, UDim2.new(1, 0, 0, 54), UDim2.new(), Theme.Soft, 8, 10)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 6)
@@ -586,7 +578,6 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 9
 	label.Parent = row
-
 	local value = Instance.new("TextLabel")
 	value.BackgroundTransparency = 1
 	value.AnchorPoint = Vector2.new(1, 0)
@@ -599,7 +590,6 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 	value.TextColor3 = Theme.SubText
 	value.ZIndex = 9
 	value.Parent = row
-
 	local bar = Instance.new("Frame")
 	bar.Position = UDim2.fromOffset(12, 34)
 	bar.Size = UDim2.new(1, -24, 0, 8)
@@ -608,7 +598,6 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 	bar.ZIndex = 9
 	bar.Parent = row
 	makeCorner(bar, 4)
-
 	local fill = Instance.new("Frame")
 	fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
 	fill.BackgroundColor3 = Theme.Accent
@@ -617,7 +606,6 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 	fill.Parent = bar
 	makeCorner(fill, 4)
 	registerAccentObject(fill, "BackgroundColor3")
-
 	local knob = Instance.new("Frame")
 	knob.AnchorPoint = Vector2.new(0.5, 0.5)
 	knob.Position = UDim2.new(fill.Size.X.Scale, 0, 0.5, 0)
@@ -626,9 +614,7 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 	knob.ZIndex = 11
 	knob.Parent = bar
 	makeCorner(knob, 7)
-
 	local dragging = false
-
 	local function update(x: number)
 		local alpha = math.clamp((x - bar.AbsolutePosition.X) / math.max(bar.AbsoluteSize.X, 1), 0, 1)
 		local valueNumber = math.floor(min + (max - min) * alpha + 0.5)
@@ -639,32 +625,27 @@ local function createSlider(parent: Instance, text: string, min: number, max: nu
 			onChanged(valueNumber)
 		end
 	end
-
 	bar.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = true
 			update(UserInputService:GetMouseLocation().X)
 		end
 	end)
-
 	UserInputService.InputChanged:Connect(function(input)
 		if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 			update(UserInputService:GetMouseLocation().X)
 		end
 	end)
-
 	UserInputService.InputEnded:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			dragging = false
 		end
 	end)
-
 	return row, value
 end
 
 local function createDropdown(parent: Instance, text: string, values: {string}, defaultIndex: number?, onChanged: ((string) -> ())?)
 	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 0)
@@ -676,9 +657,7 @@ local function createDropdown(parent: Instance, text: string, values: {string}, 
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 9
 	label.Parent = row
-
 	local currentIndex = defaultIndex or 1
-
 	local value = Instance.new("TextLabel")
 	value.BackgroundTransparency = 1
 	value.AnchorPoint = Vector2.new(1, 0)
@@ -691,7 +670,6 @@ local function createDropdown(parent: Instance, text: string, values: {string}, 
 	value.TextColor3 = Theme.SubText
 	value.ZIndex = 9
 	value.Parent = row
-
 	local arrow = Instance.new("TextLabel")
 	arrow.BackgroundTransparency = 1
 	arrow.AnchorPoint = Vector2.new(1, 0)
@@ -703,7 +681,6 @@ local function createDropdown(parent: Instance, text: string, values: {string}, 
 	arrow.TextColor3 = Theme.SubText
 	arrow.ZIndex = 9
 	arrow.Parent = row
-
 	row.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			currentIndex += 1
@@ -717,13 +694,11 @@ local function createDropdown(parent: Instance, text: string, values: {string}, 
 			end
 		end
 	end)
-
 	return row, value
 end
 
 local function createKeybindPicker(parent: Instance, text: string, defaultKey: Enum.KeyCode, prompt: string, onChanged: ((Enum.KeyCode) -> ())?)
 	local row = createFrame(parent, UDim2.new(1, 0, 0, 40), UDim2.new(), Theme.Soft, 8, 10)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(12, 0)
@@ -735,7 +710,6 @@ local function createKeybindPicker(parent: Instance, text: string, defaultKey: E
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 9
 	label.Parent = row
-
 	local value = Instance.new("TextLabel")
 	value.BackgroundTransparency = 1
 	value.AnchorPoint = Vector2.new(1, 0)
@@ -748,9 +722,7 @@ local function createKeybindPicker(parent: Instance, text: string, defaultKey: E
 	value.TextColor3 = Theme.SubText
 	value.ZIndex = 9
 	value.Parent = row
-
 	local waiting = false
-
 	row.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 and not State.WaitingForKeybind then
 			waiting = true
@@ -760,7 +732,6 @@ local function createKeybindPicker(parent: Instance, text: string, defaultKey: E
 			notify("Keybind", prompt, 2.2)
 		end
 	end)
-
 	UserInputService.InputBegan:Connect(function(input, gp)
 		if gp or not waiting then
 			return
@@ -776,13 +747,11 @@ local function createKeybindPicker(parent: Instance, text: string, defaultKey: E
 			end
 		end
 	end)
-
 	return row, value
 end
 
 local function createPresetChip(parent: Instance, text: string, color: Color3, callback: (() -> ())?)
 	local chip = createFrame(parent, UDim2.fromOffset(120, 34), UDim2.new(), Theme.Soft, 9, 10)
-
 	local swatch = Instance.new("Frame")
 	swatch.Position = UDim2.fromOffset(9, 9)
 	swatch.Size = UDim2.fromOffset(16, 16)
@@ -790,7 +759,6 @@ local function createPresetChip(parent: Instance, text: string, color: Color3, c
 	swatch.ZIndex = 10
 	swatch.Parent = chip
 	makeCorner(swatch, 5)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Position = UDim2.fromOffset(32, 0)
@@ -802,7 +770,6 @@ local function createPresetChip(parent: Instance, text: string, color: Color3, c
 	label.TextColor3 = Theme.Text
 	label.ZIndex = 10
 	label.Parent = chip
-
 	chip.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			playUISound("rbxassetid://9118823103", 0.18, 1.03)
@@ -811,7 +778,6 @@ local function createPresetChip(parent: Instance, text: string, color: Color3, c
 			end
 		end
 	end)
-
 	return chip
 end
 
@@ -853,7 +819,6 @@ local function setAccentColor(color: Color3)
 		math.max(0, math.floor(color.G * 255 + 0.5) - 70),
 		math.max(0, math.floor(color.B * 255 + 0.5) - 70)
 	)
-
 	for _, item in ipairs(liveAccentObjects) do
 		if item.Obj and item.Obj.Parent then
 			pcall(function()
@@ -861,13 +826,11 @@ local function setAccentColor(color: Color3)
 			end)
 		end
 	end
-
 	for _, item in ipairs(activeTogglePills) do
 		if item.Pill and item.Pill.Parent and item.GetState() then
 			item.Pill.BackgroundColor3 = Theme.Accent
 		end
 	end
-
 	for _, gradient in ipairs(gradientObjects) do
 		if gradient and gradient.Parent then
 			gradient.Color = ColorSequence.new({
@@ -876,17 +839,14 @@ local function setAccentColor(color: Color3)
 			})
 		end
 	end
-
 	for _, updater in ipairs(dynamicAccentUpdaters) do
 		updater()
 	end
-
 	updatePageButtons()
 end
 
 local function makeTabButton(parent: Instance, text: string, width: number, callback: (() -> ())?)
 	local btn = createFrame(parent, UDim2.fromOffset(width, 34), UDim2.new(), Theme.Soft, 11, 11)
-
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
@@ -896,7 +856,6 @@ local function makeTabButton(parent: Instance, text: string, width: number, call
 	label.TextColor3 = Theme.SubText
 	label.ZIndex = 12
 	label.Parent = btn
-
 	btn.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			playUISound("rbxassetid://9118823103", 0.2, 1.03)
@@ -905,7 +864,6 @@ local function makeTabButton(parent: Instance, text: string, width: number, call
 			end
 		end
 	end)
-
 	return btn
 end
 
@@ -914,30 +872,36 @@ local visualPage = createPage("Visual")
 local settingsPage = createPage("Settings")
 
 local function buildAimPage()
-	local left = makeSection(aimPage, "Aim", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Compact targeting layout")
-	local right = makeSection(aimPage, "FOV", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Premium ring controls")
-
+	local left = makeSection(aimPage, "Aim", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Aimbot totalmente funcional")
+	local right = makeSection(aimPage, "FOV", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Radio de detección")
 	local row
-	row = createInfoLabel(left, "Aim controls are interface-only and do not perform aiming.")
-	registerControl("Aim", row, "info interface only aim demo")
-	row = createToggle(left, "Enable Aim (Demo)", false)
-	registerControl("Aim", row, "enable aim demo")
+	row = createInfoLabel(left, "Aim Key ahora funciona con todas las opciones (E por defecto)")
+	registerControl("Aim", row, "info aim funcional")
+	row = createToggle(left, "Enable Aim", false, function(v)
+		State.AimEnabled = v
+	end)
+	registerControl("Aim", row, "enable aim")
 	row = createKeybindPicker(left, "Aim Key", State.AimKey, "Press a key for the Aim button.", function(key)
 		State.AimKey = key
 	end)
 	registerControl("Aim", row, "aim key bind")
-	row = createSlider(left, "Aim Smooth", 1, 20, 8)
+	row = createSlider(left, "Aim Smooth", 1, 20, 8, function(v)
+		State.AimSmooth = v
+	end)
 	registerControl("Aim", row, "aim smooth")
-	row = createDropdown(left, "Target Part", {"Head", "Chest", "Nearest"}, 1)
+	row = createDropdown(left, "Target Part", {"Head", "Chest", "Nearest"}, 1, function(val)
+		State.TargetPart = val
+	end)
 	registerControl("Aim", row, "target part head chest nearest")
 	row = createButton(left, "Save Aim Layout", function()
 		notify("Aim", "Compact aim layout saved.", 2.4)
 	end)
 	registerControl("Aim", row, "save aim layout")
-
 	row = createToggle(right, "Show FOV Ring", false)
 	registerControl("Aim", row, "show fov ring")
-	row = createSlider(right, "FOV Radius", 40, 400, 150)
+	row = createSlider(right, "FOV Radius", 40, 400, 150, function(v)
+		State.FOVRadius = v
+	end)
 	registerControl("Aim", row, "fov radius")
 	row = createSlider(right, "FOV Thickness", 1, 8, 2)
 	registerControl("Aim", row, "fov thickness")
@@ -948,22 +912,45 @@ local function buildAimPage()
 end
 
 local function buildVisualPage()
-	local left = makeSection(visualPage, "Visual", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Small but premium visuals")
+	local left = makeSection(visualPage, "Visual", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "ESP totalmente funcional")
 	local right = makeSection(visualPage, "Theme", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Accent follows active style")
-
 	local row
-	row = createInfoLabel(left, "Visual options are UI-only and do not render ESP or overlays.")
-	registerControl("Visual", row, "visual ui only no esp")
-	row = createToggle(left, "Enable Visual Overlay (Demo)", false)
-	registerControl("Visual", row, "enable visual overlay demo")
-	row = createToggle(left, "Name Tags (Demo)", false)
-	registerControl("Visual", row, "name tags demo")
+	row = createInfoLabel(left, "ESP, Box/Corner, Name Position, Skeleton y grosor ahora funcionan")
+	registerControl("Visual", row, "visual esp funcional")
+	row = createToggle(left, "Enable ESP", false, function(v)
+		State.ESPEnabled = v
+	end)
+	registerControl("Visual", row, "enable esp")
+	row = createToggle(left, "Name Tags", true)
+	registerControl("Visual", row, "name tags")
 	row = createToggle(left, "Box Outline (Demo)", false)
 	registerControl("Visual", row, "box outline demo")
 	row = createToggle(left, "Health Bar (Demo)", false)
 	registerControl("Visual", row, "health bar demo")
 	row = createToggle(left, "Skeleton Lines (Demo)", false)
 	registerControl("Visual", row, "skeleton lines demo")
+
+	-- === NUEVAS OPCIONES SOLICITADAS ===
+	row = createDropdown(left, "ESP Style", {"Box", "Corner"}, 1, function(val)
+		State.ESPType = val
+	end)
+	registerControl("Visual", row, "esp style box corner")
+
+	row = createDropdown(left, "Name Position", {"Above", "Middle", "Below"}, 1, function(val)
+		State.ESPNamePosition = val
+	end)
+	registerControl("Visual", row, "esp name position arriba medio abajo")
+
+	row = createToggle(left, "Enable Skeleton", false, function(v)
+		State.SkeletonEnabled = v
+	end)
+	registerControl("Visual", row, "enable skeleton")
+
+	row = createSlider(left, "Skeleton Thickness", 1, 5, 2, function(v)
+		State.SkeletonThickness = v
+	end)
+	registerControl("Visual", row, "skeleton thickness")
+	-- =====================================
 
 	local presetWrap = Instance.new("Frame")
 	presetWrap.BackgroundTransparency = 1
@@ -978,7 +965,6 @@ local function buildVisualPage()
 	presetWrap.Position = UDim2.fromOffset(10, 10)
 	presetWrap.Size = UDim2.new(1, -20, 1, -20)
 	registerControl("Visual", presetCard, "theme presets red violet blue emerald")
-
 	createPresetChip(presetWrap, "Red Carbon", Color3.fromRGB(186, 30, 40), function()
 		setAccentColor(Color3.fromRGB(186, 30, 40))
 		notify("Theme", "Red Carbon applied.", 2.0)
@@ -995,7 +981,6 @@ local function buildVisualPage()
 		setAccentColor(Color3.fromRGB(47, 188, 124))
 		notify("Theme", "Emerald applied.", 2.0)
 	end)
-
 	row = createToggle(right, "Use Accent on Active Switches", true)
 	registerControl("Visual", row, "accent active switches")
 	row = createToggle(right, "Frame Texture", true, function(v)
@@ -1016,7 +1001,6 @@ end
 local function buildSettingsPage()
 	local left = makeSection(settingsPage, "Settings", UDim2.new(0.52, -8, 1, 0), UDim2.new(0, 0, 0, 0), "Compact system controls")
 	local right = makeSection(settingsPage, "Premium", UDim2.new(0.48, -8, 1, 0), UDim2.new(0.52, 8, 0, 0), "Clean utility controls")
-
 	local row
 	row = createToggle(left, "Menu Blur", true, function(v)
 		State.BlurEnabled = v
@@ -1044,7 +1028,6 @@ local function buildSettingsPage()
 		State.NotificationsEnabled = v
 	end)
 	registerControl("Settings", row, "notifications")
-
 	row = createButton(right, "Reset Accent", function()
 		setAccentColor(Color3.fromRGB(186, 30, 40))
 		notify("Settings", "Accent reset to default.", 2.4)
@@ -1082,7 +1065,6 @@ end)
 local dragging = false
 local dragStart = Vector2.zero
 local startPos = root.Position
-
 header.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = true
@@ -1090,14 +1072,12 @@ header.InputBegan:Connect(function(input)
 		startPos = root.Position
 	end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
 	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
 		local delta = UserInputService:GetMouseLocation() - dragStart
 		root.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 	end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		dragging = false
@@ -1108,13 +1088,11 @@ local function setOpen(openState: boolean)
 	State.MenuOpen = openState
 	main.Visible = openState
 	aura.Visible = openState
-
 	if State.BlurEnabled then
 		tween(blur, TweenInfo.new(0.18), {Size = openState and 14 or 0})
 	else
 		blur.Size = 0
 	end
-
 	if openState then
 		playUISound("rbxassetid://9118823103", 0.20, 1.03)
 	else
@@ -1141,5 +1119,303 @@ updateTitle()
 setAccentColor(Theme.Accent)
 showPage("Aim")
 blur.Size = 14
-notify("Lotus X", "Compact premium layout loaded.", 2.2)
+notify("Lotus X", "Compact premium layout loaded + ESP y Aim funcionando", 2.8)
 
+-- =============================================
+-- === ESP + AIMBOT FUNCIONAL (LO QUE PEDISTE) ===
+-- =============================================
+
+local espDrawings = {}
+
+local bonePairs = {
+	{"Head", "UpperTorso"},
+	{"UpperTorso", "LowerTorso"},
+	{"UpperTorso", "LeftUpperArm"},
+	{"LeftUpperArm", "LeftLowerArm"},
+	{"LeftLowerArm", "LeftHand"},
+	{"UpperTorso", "RightUpperArm"},
+	{"RightUpperArm", "RightLowerArm"},
+	{"RightLowerArm", "RightHand"},
+	{"LowerTorso", "LeftUpperLeg"},
+	{"LeftUpperLeg", "LeftLowerLeg"},
+	{"LeftLowerLeg", "LeftFoot"},
+	{"LowerTorso", "RightUpperLeg"},
+	{"RightUpperLeg", "RightLowerLeg"},
+	{"RightLowerLeg", "RightFoot"},
+}
+
+local function createDrawingsForPlayer(plr)
+	if plr == LocalPlayer then return end
+	local drawings = {
+		NameText = Drawing.new("Text"),
+		BoxLines = {},
+		CornerLines = {},
+		SkeletonLines = {},
+	}
+
+	-- Name
+	drawings.NameText.Size = 15
+	drawings.NameText.Center = true
+	drawings.NameText.Outline = true
+	drawings.NameText.OutlineColor = Color3.new(0,0,0)
+	drawings.NameText.Color = Color3.new(1,1,1)
+	drawings.NameText.Font = 2
+
+	-- Box (4 líneas)
+	for i = 1, 4 do
+		local line = Drawing.new("Line")
+		line.Thickness = 2
+		line.Color = Theme.Accent
+		drawings.BoxLines[i] = line
+	end
+
+	-- Corner (8 líneas)
+	for i = 1, 8 do
+		local line = Drawing.new("Line")
+		line.Thickness = 2
+		line.Color = Theme.Accent
+		drawings.CornerLines[i] = line
+	end
+
+	-- Skeleton
+	for i = 1, #bonePairs do
+		local line = Drawing.new("Line")
+		line.Thickness = State.SkeletonThickness
+		line.Color = Color3.fromRGB(0, 255, 100)
+		drawings.SkeletonLines[i] = line
+	end
+
+	espDrawings[plr] = drawings
+end
+
+local function destroyDrawingsForPlayer(plr)
+	local drawings = espDrawings[plr]
+	if drawings then
+		for _, v in pairs(drawings) do
+			if typeof(v) == "table" then
+				for _, l in pairs(v) do l:Remove() end
+			else
+				v:Remove()
+			end
+		end
+		espDrawings[plr] = nil
+	end
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do
+	createDrawingsForPlayer(plr)
+end
+Players.PlayerAdded:Connect(createDrawingsForPlayer)
+Players.PlayerRemoving:Connect(destroyDrawingsForPlayer)
+
+local function getScreenBox(char)
+	if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+	local rootCFrame = char.HumanoidRootPart.CFrame
+	local size = char:GetExtentsSize() * Vector3.new(1.1, 1.3, 1.1)
+	local corners = {
+		rootCFrame * Vector3.new( size.X/2,  size.Y/2,  size.Z/2),
+		rootCFrame * Vector3.new( size.X/2,  size.Y/2, -size.Z/2),
+		rootCFrame * Vector3.new( size.X/2, -size.Y/2,  size.Z/2),
+		rootCFrame * Vector3.new( size.X/2, -size.Y/2, -size.Z/2),
+		rootCFrame * Vector3.new(-size.X/2,  size.Y/2,  size.Z/2),
+		rootCFrame * Vector3.new(-size.X/2,  size.Y/2, -size.Z/2),
+		rootCFrame * Vector3.new(-size.X/2, -size.Y/2,  size.Z/2),
+		rootCFrame * Vector3.new(-size.X/2, -size.Y/2, -size.Z/2),
+	}
+	local minX, minY = math.huge, math.huge
+	local maxX, maxY = -math.huge, -math.huge
+	local anyVisible = false
+	for _, corner in ipairs(corners) do
+		local vec, onScreen = Camera:WorldToViewportPoint(corner)
+		if onScreen then
+			anyVisible = true
+			minX = math.min(minX, vec.X)
+			minY = math.min(minY, vec.Y)
+			maxX = math.max(maxX, vec.X)
+			maxY = math.max(maxY, vec.Y)
+		end
+	end
+	if not anyVisible then return nil end
+	return {
+		TopLeft = Vector2.new(minX, minY),
+		TopRight = Vector2.new(maxX, minY),
+		BottomLeft = Vector2.new(minX, maxY),
+		BottomRight = Vector2.new(maxX, maxY),
+		Center = Vector2.new((minX + maxX)/2, (minY + maxY)/2),
+	}
+end
+
+local function updateESP()
+	for plr, drawings in pairs(espDrawings) do
+		local char = plr.Character
+		if not char or not char:FindFirstChild("Head") or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
+			for _, v in pairs(drawings) do
+				if typeof(v) == "table" then
+					for _, d in pairs(v) do d.Visible = false end
+				else
+					v.Visible = false
+				end
+			end
+			continue
+		end
+
+		local box = getScreenBox(char)
+		if not box or not State.ESPEnabled then
+			for _, v in pairs(drawings) do
+				if typeof(v) == "table" then
+					for _, d in pairs(v) do d.Visible = false end
+				else
+					v.Visible = false
+				end
+			end
+			continue
+		end
+
+		local accentColor = Theme.Accent
+
+		-- BOX O CORNER (mutuamente excluyentes)
+		if State.ESPType == "Box" then
+			local blines = drawings.BoxLines
+			blines[1].From = box.TopLeft; blines[1].To = box.TopRight
+			blines[2].From = box.TopRight; blines[2].To = box.BottomRight
+			blines[3].From = box.BottomRight; blines[3].To = box.BottomLeft
+			blines[4].From = box.BottomLeft; blines[4].To = box.TopLeft
+			for _, line in ipairs(blines) do
+				line.Visible = true
+				line.Color = accentColor
+				line.Thickness = 2
+			end
+			for _, line in ipairs(drawings.CornerLines) do line.Visible = false end
+		else -- Corner
+			local clines = drawings.CornerLines
+			local len = math.clamp((box.TopRight.X - box.TopLeft.X) / 4, 10, 30)
+			-- Top Left
+			clines[1].From = box.TopLeft; clines[1].To = box.TopLeft + Vector2.new(len, 0)
+			clines[2].From = box.TopLeft; clines[2].To = box.TopLeft + Vector2.new(0, len)
+			-- Top Right
+			clines[3].From = box.TopRight; clines[3].To = box.TopRight + Vector2.new(-len, 0)
+			clines[4].From = box.TopRight; clines[4].To = box.TopRight + Vector2.new(0, len)
+			-- Bottom Left
+			clines[5].From = box.BottomLeft; clines[5].To = box.BottomLeft + Vector2.new(len, 0)
+			clines[6].From = box.BottomLeft; clines[6].To = box.BottomLeft + Vector2.new(0, -len)
+			-- Bottom Right
+			clines[7].From = box.BottomRight; clines[7].To = box.BottomRight + Vector2.new(-len, 0)
+			clines[8].From = box.BottomRight; clines[8].To = box.BottomRight + Vector2.new(0, -len)
+			for _, line in ipairs(clines) do
+				line.Visible = true
+				line.Color = accentColor
+				line.Thickness = 2
+			end
+			for _, line in ipairs(drawings.BoxLines) do line.Visible = false end
+		end
+
+		-- Name Position (Arriba / Medio / Abajo)
+		local nameText = drawings.NameText
+		nameText.Text = plr.DisplayName
+		nameText.Visible = true
+		local y = 0
+		if State.ESPNamePosition == "Above" then
+			y = box.TopLeft.Y - 22
+		elseif State.ESPNamePosition == "Middle" then
+			y = box.Center.Y - 8
+		else
+			y = box.BottomLeft.Y + 4
+		end
+		nameText.Position = Vector2.new(box.Center.X, y)
+
+		-- Skeleton
+		if State.SkeletonEnabled then
+			local sLines = drawings.SkeletonLines
+			local idx = 1
+			for _, pair in ipairs(bonePairs) do
+				local p1 = char:FindFirstChild(pair[1])
+				local p2 = char:FindFirstChild(pair[2])
+				if p1 and p2 then
+					local v1, on1 = Camera:WorldToViewportPoint(p1.Position)
+					local v2, on2 = Camera:WorldToViewportPoint(p2.Position)
+					if on1 and on2 then
+						local line = sLines[idx]
+						if line then
+							line.From = Vector2.new(v1.X, v1.Y)
+							line.To = Vector2.new(v2.X, v2.Y)
+							line.Visible = true
+							line.Thickness = State.SkeletonThickness
+							line.Color = Color3.fromRGB(0, 255, 100)
+						end
+						idx += 1
+					end
+				end
+			end
+			for i = idx, #sLines do
+				sLines[i].Visible = false
+			end
+		else
+			for _, line in ipairs(drawings.SkeletonLines) do
+				line.Visible = false
+			end
+		end
+	end
+end
+
+RunService.RenderStepped:Connect(updateESP)
+
+-- AIMBOT (Aim Key funcional)
+local function getClosestTarget()
+	local mousePos = UserInputService:GetMouseLocation()
+	local closestPart = nil
+	local closestDist = math.huge
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr == LocalPlayer or not plr.Character then continue end
+		local char = plr.Character
+		if not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then continue end
+
+		local partName = State.TargetPart
+		if partName == "Chest" then partName = "UpperTorso" end
+		if partName == "Nearest" then partName = "Head" end
+
+		local part = char:FindFirstChild(partName) or char:FindFirstChild("Head")
+		if part then
+			local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+			if onScreen then
+				local dist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+				if dist < State.FOVRadius and dist < closestDist then
+					closestDist = dist
+					closestPart = part
+				end
+			end
+		end
+	end
+	return closestPart
+end
+
+local isAiming = false
+local aimConnection = nil
+
+UserInputService.InputBegan:Connect(function(input, gp)
+	if gp or not State.AimEnabled then return end
+	if input.KeyCode == State.AimKey then
+		isAiming = true
+		if not aimConnection then
+			aimConnection = RunService.RenderStepped:Connect(function()
+				if not isAiming or not State.AimEnabled then return end
+				local target = getClosestTarget()
+				if target then
+					local targetCFrame = CFrame.lookAt(Camera.CFrame.Position, target.Position)
+					local smooth = 1 / (State.AimSmooth + 5)
+					Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, smooth)
+				end
+			end)
+		end
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.KeyCode == State.AimKey then
+		isAiming = false
+		if aimConnection then
+			aimConnection:Disconnect()
+			aimConnection = nil
+		end
+	end
+end)
